@@ -3,6 +3,7 @@ package com.travelapp.service;
 import com.travelapp.dto.UserCreateRequest;
 import com.travelapp.dto.UserResponse;
 import com.travelapp.entity.User;
+import com.travelapp.exception.EmailAlreadyExistsException;
 import com.travelapp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,7 +21,7 @@ public class UserService {
     public UserResponse create(UserCreateRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already in use");
+            throw new EmailAlreadyExistsException();
         }
 
         User user = User.builder()

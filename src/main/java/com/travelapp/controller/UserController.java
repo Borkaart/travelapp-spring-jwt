@@ -17,11 +17,22 @@ public class UserController {
 
     private final UserService userService;
 
+    /**
+     * Endpoint público
+     * POST /api/users
+     */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserResponse create(@RequestBody @Valid UserCreateRequest request) {
+    public UserResponse create(
+            @RequestBody @Valid UserCreateRequest request
+    ) {
         return userService.create(request);
     }
+
+    /**
+     * Endpoint protegido (JWT obrigatório)
+     * GET /api/users/me
+     */
     @GetMapping("/me")
     public UserResponse me(
             @AuthenticationPrincipal User user
@@ -32,5 +43,4 @@ public class UserController {
                 .email(user.getEmail())
                 .build();
     }
-
 }
