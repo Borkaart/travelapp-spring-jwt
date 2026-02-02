@@ -55,13 +55,14 @@ public class JwtService {
         return extractUsername(token).equals(userDetails.getUsername())
                 && !isTokenExpired(token);
     }
-
+    public long getJwtExpirationSeconds() {
+        return jwtExpiration / 1000;
+    }
     private boolean isTokenExpired(String token) {
         return extractAllClaims(token)
                 .getExpiration()
                 .before(new Date());
     }
-
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
