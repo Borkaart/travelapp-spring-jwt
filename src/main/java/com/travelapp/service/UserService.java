@@ -2,6 +2,7 @@ package com.travelapp.service;
 
 import com.travelapp.dto.UserCreateRequest;
 import com.travelapp.dto.UserResponse;
+import com.travelapp.entity.Role;
 import com.travelapp.entity.User;
 import com.travelapp.exception.EmailAlreadyExistsException;
 import com.travelapp.repository.UserRepository;
@@ -29,7 +30,7 @@ public class UserService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .createdAt(LocalDateTime.now())
-                .role("USER") // 👈 obrigatório
+                .role(Role.USER) // ✅ enum, não String
                 .build();
 
         User savedUser = userRepository.save(user);
@@ -41,4 +42,3 @@ public class UserService {
                 .build();
     }
 }
-

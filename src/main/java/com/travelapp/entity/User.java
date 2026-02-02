@@ -8,6 +8,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 @Entity
@@ -37,12 +38,15 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String role; // 👈 AGORA EXISTE NO BANCO
+    private Role role;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role));
+        return Collections.singletonList(
+                new SimpleGrantedAuthority("ROLE_" + role.name())
+        );
     }
 
     @Override
