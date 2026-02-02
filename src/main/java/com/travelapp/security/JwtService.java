@@ -28,14 +28,15 @@ public class JwtService {
     }
 
     public String generateToken(UserDetails userDetails) {
+
         User user = (User) userDetails;
 
         Map<String, Object> claims = new HashMap<>();
-        claims.put("role", user.getRole().name());
+        claims.put("role", user.getRole()); // ✅ SEM .name()
 
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(user.getUsername())
+                .setSubject(user.getUsername()) // email
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -43,19 +44,25 @@ public class JwtService {
     }
 
     public String extractUsername(String token) {
-        return parseClaims(token).getSubject();
+        return extractAllClaims(token).getSubject();
     }
 
     public String extractRole(String token) {
-        return parseClaims(token).get("role", String.class);
+        return extractAllClaims(token).get("role", String.class);
     }
 
-    public boolean isTokenValid(String token, UserDetails user) {
-        return extractUsername(token).equals(user.getUsername())
-                && !parseClaims(token).getExpiration().before(new Date());
+    public boolean isTokenValid(String token, UserDetails userDetails) {
+        return extractUsername(token).equals(userDetails.getUsername())
+                && !isTokenExpired(token);
     }
 
-    private Claims parseClaims(String token) {
+    private boolean isTokenExpired(String token) {
+        return extractAllClaims(token)
+                .getExpiration()
+                .before(new Date());
+    }
+
+    private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()

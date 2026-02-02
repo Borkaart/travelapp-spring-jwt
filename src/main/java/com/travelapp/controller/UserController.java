@@ -7,6 +7,7 @@ import com.travelapp.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,6 +34,7 @@ public class UserController {
      * Endpoint protegido (JWT obrigatório)
      * GET /api/users/me
      */
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/me")
     public UserResponse me(
             @AuthenticationPrincipal User user
@@ -43,4 +45,10 @@ public class UserController {
                 .email(user.getEmail())
                 .build();
     }
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin")
+    public String adminOnly() {
+        return "Acesso ADMIN liberado";
+    }
+
 }

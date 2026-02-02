@@ -29,6 +29,7 @@ public class UserService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .createdAt(LocalDateTime.now())
+                .role("USER") // 👈 obrigatório
                 .build();
 
         User savedUser = userRepository.save(user);

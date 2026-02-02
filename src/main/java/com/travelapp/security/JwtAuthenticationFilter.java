@@ -1,27 +1,43 @@
 package com.travelapp.security;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final CustomUserDetailsService userDetailsService;
+    private final UserDetailsService userDetailsService;
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+        String method = request.getMethod();
+
+        return HttpMethod.OPTIONS.matches(method)
+                // públicos
+                || path.startsWith("/api/auth") // ✅ login/refresh/logout
+                || (path.equals("/api/users") && HttpMethod.POST.matches(method)) // ✅ cadastro
+                // swagger
+                || path.startsWith("/swagger-ui")
+                || path.startsWith("/v3/api-docs")
+                || path.equals("/swagger-ui.html");
+    }
 
     @Override
     protected void doFilterInternal(
@@ -30,53 +46,44 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String path = request.getServletPath();
-
-        if (
-                path.startsWith("/api/auth") ||
-                        path.startsWith("/swagger-ui") ||
-                        path.startsWith("/v3/api-docs") ||
-                        (path.equals("/api/users") && request.getMethod().equals("POST"))
-        ) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        String authHeader = request.getHeader("Authorization");
+        final String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String jwt = authHeader.substring(7);
-        String username = jwtService.extractUsername(jwt);
+        final String jwt = authHeader.substring(7).trim();
 
-        if (username != null &&
-                SecurityContextHolder.getContext().getAuthentication() == null) {
+        // Guard simples para evitar exception por token zoado
+        long dotCount = jwt.chars().filter(ch -> ch == '.').count();
+        if (dotCount != 2) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-            UserDetails userDetails =
-                    userDetailsService.loadUserByUsername(username);
+        try {
+            final String username = jwtService.extractUsername(jwt);
 
-            if (jwtService.isTokenValid(jwt, userDetails)) {
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                String role = jwtService.extractRole(jwt);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                List.of(new SimpleGrantedAuthority(role))
-                        );
+                if (jwtService.isTokenValid(jwt, userDetails)) {
 
-                authToken.setDetails(
-                        new WebAuthenticationDetailsSource()
-                                .buildDetails(request)
-                );
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
 
-                SecurityContextHolder.getContext()
-                        .setAuthentication(authToken);
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
             }
+        } catch (JwtException | IllegalArgumentException e) {
+            // token inválido -> não autentica; segue o fluxo
         }
 
         filterChain.doFilter(request, response);
