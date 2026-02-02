@@ -1,6 +1,10 @@
 package com.travelapp.controller;
 
 import com.travelapp.dto.AuthResponse;
+import com.travelapp.dto.RefreshRequest;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import com.travelapp.dto.LoginRequest;
 import com.travelapp.security.JwtService;
 import com.travelapp.security.RefreshTokenService;
@@ -40,5 +44,10 @@ public class AuthController {
                 .refreshToken(refreshToken)
                 .expiresIn(jwtService.getJwtExpirationSeconds())
                 .build();
+    }
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logout(@RequestBody @Valid RefreshRequest request) {
+        refreshTokenService.revoke(request.refreshToken());
     }
 }
