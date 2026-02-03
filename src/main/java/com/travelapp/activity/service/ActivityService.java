@@ -31,15 +31,9 @@ public class ActivityService {
         ItineraryDay day = itineraryDayRepository.findById(request.getItineraryDayId())
                 .orElseThrow(() -> new EntityNotFoundException("Itinerary day not found"));
 
-        // ownership: day -> trip -> owner
-        if (!day.getTrip().getOwner().getId().equals(user.getId())) {
-            throw new AccessDeniedException("Not your trip");
-        }
+        assertTripOwner(day.getTrip().getOwner().getId(), user);
 
-        // regra de domínio: custo não pode ser negativo
-        if (request.getCost() != null && request.getCost().signum() < 0) {
-            throw new InvalidActivityCostException();
-        }
+        validateCost(request.getCost());
 
         Activity activity = Activity.builder()
                 .itineraryDay(day)
@@ -61,9 +55,7 @@ public class ActivityService {
         ItineraryDay day = itineraryDayRepository.findById(itineraryDayId)
                 .orElseThrow(() -> new EntityNotFoundException("Itinerary day not found"));
 
-        if (!day.getTrip().getOwner().getId().equals(user.getId())) {
-            throw new AccessDeniedException("Not your trip");
-        }
+        assertTripOwner(day.getTrip().getOwner().getId(), user);
 
         return activityRepository
                 .findAllByItineraryDayIdOrderByTimeAscCreatedAtAsc(itineraryDayId)
@@ -78,36 +70,42 @@ public class ActivityService {
         Activity activity = activityRepository.findById(activityId)
                 .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
 
-        // ownership: activity -> itineraryDay -> trip -> owner
-        if (!activity.getItineraryDay().getTrip().getOwner().getId().equals(user.getId())) {
-            throw new AccessDeniedException("Not your trip");
-        }
+        assertTripOwner(activity.getItineraryDay().getTrip().getOwner().getId(), user);
 
-        // regra de domínio: custo não pode ser negativo
-        if (request.getCost() != null && request.getCost().signum() < 0) {
-            throw new InvalidActivityCostException();
-        }
+        validateCost(request.getCost());
 
-        activity.setType(request.getType());
-        activity.setTitle(request.getTitle());
-        activity.setPlace(request.getPlace());
-        activity.setNotes(request.getNotes());
-        activity.setTime(request.getTime());
-        activity.setCost(request.getCost());
+        // PATCH-like: só atualiza o que veio
+        if (request.getType() != null) activity.setType(request.getType());
+        if (request.getTitle() != null) activity.setTitle(request.getTitle());
+        if (request.getPlace() != null) activity.setPlace(request.getPlace());
+        if (request.getNotes() != null) activity.setNotes(request.getNotes());
+        if (request.getTime() != null) activity.setTime(request.getTime());
+        if (request.getCost() != null) activity.setCost(request.getCost());
 
         return toResponse(activityRepository.save(activity));
     }
+
     @Transactional
     public void delete(Long activityId, User user) {
 
         Activity activity = activityRepository.findById(activityId)
                 .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
 
-        if (!activity.getItineraryDay().getTrip().getOwner().getId().equals(user.getId())) {
-            throw new AccessDeniedException("Not your trip");
-        }
+        assertTripOwner(activity.getItineraryDay().getTrip().getOwner().getId(), user);
 
         activityRepository.delete(activity);
+    }
+
+    private void assertTripOwner(Long ownerId, User user) {
+        if (!ownerId.equals(user.getId())) {
+            throw new AccessDeniedException("Not your trip");
+        }
+    }
+
+    private void validateCost(java.math.BigDecimal cost) {
+        if (cost != null && cost.signum() < 0) {
+            throw new InvalidActivityCostException();
+        }
     }
 
     private ActivityResponse toResponse(Activity a) {

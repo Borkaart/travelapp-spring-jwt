@@ -3,7 +3,9 @@ package com.travelapp.trip.api;
 import com.travelapp.entity.User;
 import com.travelapp.trip.dto.TripCreateRequest;
 import com.travelapp.trip.dto.TripResponse;
+import com.travelapp.trip.repository.TripSummaryProjection;
 import com.travelapp.trip.service.TripService;
+import com.travelapp.trip.service.TripSummaryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 public class TripController {
 
     private final TripService tripService;
+    private final TripSummaryService tripSummaryService;
 
     @PostMapping
     @PreAuthorize("hasRole('USER')")
@@ -35,5 +38,14 @@ public class TripController {
             Pageable pageable
     ) {
         return tripService.listMyTrips(user, pageable);
+    }
+
+    @GetMapping("/{tripId}/summary")
+    @PreAuthorize("hasRole('USER')")
+    public TripSummaryProjection summary(
+            @PathVariable Long tripId,
+            @AuthenticationPrincipal User user
+    ) {
+        return tripSummaryService.getSummary(tripId, user);
     }
 }
