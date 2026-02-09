@@ -1,34 +1,28 @@
 ```mermaid
 flowchart LR
 
-%% ========= FRONT -> BACK =========
-FE[Frontend (Vite/React)] -->|HTTP + JSON| C[Controllers]
+FE["Frontend - Vite React"] -->|"HTTP JSON"| CTRL["Controllers"]
 
-%% ========= CORE LAYERS =========
-subgraph APP[Spring Boot App - com.travelapp]
-C --> S[Services]
-S --> R[Repositories]
-R --> DB[(PostgreSQL)]
+subgraph APP["Spring Boot App"]
+CTRL --> SVC["Services"]
+SVC --> REPO["Repositories"]
+REPO --> DB["PostgreSQL"]
 
-    %% ========= SECURITY =========
-    FE -->|Bearer JWT| SEC[SecurityFilterChain]
-    subgraph SECURITY[security/*]
-      SEC --> JWT_FILTER[JwtAuthenticationFilter]
-      JWT_FILTER --> JWT_SVC[JwtService]
-      JWT_FILTER --> UDS[CustomUserDetailsService]
-      UDS --> USER_REPO[UserRepository]
-      SEC --> AUTH_PROVIDER[AuthenticationProvider]
-      SEC --> ENTRY[JwtAuthenticationEntryPoint (401)]
-      SEC --> DENIED[JwtAccessDeniedHandler (403)]
-      AUTH_CONTROLLER[AuthController] -->|authenticate| AUTH_MGR[AuthenticationManager]
-      AUTH_CONTROLLER --> JWT_SVC
-      AUTH_CONTROLLER --> RT_SVC[RefreshTokenService]
-      RT_SVC --> RT_REPO[RefreshTokenRepository]
-    end
-
-    %% ========= GLOBAL =========
-    EX[GlobalExceptionHandler] --- C
+subgraph SECURITY
+JWTF["JwtAuthenticationFilter"] --> JWTS["JwtService"]
+JWTF --> UDS["CustomUserDetailsService"]
+UDS --> USERREPO["UserRepository"]
+AUTHC["AuthController"] --> AUTHM["AuthenticationManager"]
+AUTHC --> RTS["RefreshTokenService"]
+RTS --> RTREPO["RefreshTokenRepository"]
 end
+
+CTRL --> SECURITY
+
+EX["GlobalExceptionHandler"] -.-> CTRL
+end
+```
+
 
 %% ========= DOMAINS (HTTP -> Service -> Repo) =========
 subgraph DOMAINS[Domínios]
