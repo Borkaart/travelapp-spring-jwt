@@ -1,4 +1,6 @@
+```mermaid
 flowchart LR
+
 %% ========= FRONT -> BACK =========
 FE[Frontend (Vite/React)] -->|HTTP + JSON| C[Controllers]
 
