@@ -1,131 +1,91 @@
-# TravelApp API
+flowchart LR
+%% ========= FRONT -> BACK =========
+FE[Frontend (Vite/React)] -->|HTTP + JSON| C[Controllers]
 
-API REST desenvolvida em **Spring Boot** com foco em **boas práticas de arquitetura** e **segurança com JWT**.  
-Este projeto serve como base para um sistema de viagens, podendo evoluir para reservas, itinerários e gestão de usuários.
+%% ========= CORE LAYERS =========
+subgraph APP[Spring Boot App - com.travelapp]
+C --> S[Services]
+S --> R[Repositories]
+R --> DB[(PostgreSQL)]
 
-👨‍💻 Autor
+    %% ========= SECURITY =========
+    FE -->|Bearer JWT| SEC[SecurityFilterChain]
+    subgraph SECURITY[security/*]
+      SEC --> JWT_FILTER[JwtAuthenticationFilter]
+      JWT_FILTER --> JWT_SVC[JwtService]
+      JWT_FILTER --> UDS[CustomUserDetailsService]
+      UDS --> USER_REPO[UserRepository]
+      SEC --> AUTH_PROVIDER[AuthenticationProvider]
+      SEC --> ENTRY[JwtAuthenticationEntryPoint (401)]
+      SEC --> DENIED[JwtAccessDeniedHandler (403)]
+      AUTH_CONTROLLER[AuthController] -->|authenticate| AUTH_MGR[AuthenticationManager]
+      AUTH_CONTROLLER --> JWT_SVC
+      AUTH_CONTROLLER --> RT_SVC[RefreshTokenService]
+      RT_SVC --> RT_REPO[RefreshTokenRepository]
+    end
 
-Paulo Henrique dos Anjos
+    %% ========= GLOBAL =========
+    EX[GlobalExceptionHandler] --- C
+end
 
-Projeto desenvolvido para estudo, prática profissional e portfólio.
+%% ========= DOMAINS (HTTP -> Service -> Repo) =========
+subgraph DOMAINS[Domínios]
+TRIP_C[TripController] --> TRIP_S[TripService]
+TRIP_C --> SUM_S[TripSummaryService]
+TRIP_S --> TRIP_R[TripRepository]
+SUM_S --> TRIP_R
 
----
+    DEST_C[DestinationController] --> DEST_S[DestinationService]
+    DEST_S --> DEST_R[DestinationRepository]
 
-## 🎯 Objetivo do Projeto
+    IT_C[ItineraryDayController] --> IT_S[ItineraryDayService]
+    IT_S --> IT_R[ItineraryDayRepository]
 
-- Implementar uma API REST moderna e segura
-- Utilizar autenticação e autorização com **JWT**
-- Aplicar separação de responsabilidades (Controller, Service, Repository)
-- Servir como **projeto de estudo avançado e portfólio profissional**
+    ACT_C[ActivityController] --> ACT_S[ActivityService]
+    ACT_S --> ACT_R[ActivityRepository]
+    ACT_S --> IT_R
 
----
+    EXP_C[ExpenseController] --> EXP_S[ExpenseService]
+    EXP_S --> EXP_R[ExpenseRepository]
 
-## 🚀 Tecnologias Utilizadas
+    BUD_C[BudgetController] --> BUD_S[BudgetService]
+    BUD_S --> BUD_R[BudgetRepository]
+    BUD_S --> TRIP_R
+end
 
-- **Java 17+**
-- **Spring Boot**
-- **Spring Security**
-- **JWT (JSON Web Token)**
-- **Spring Data JPA / Hibernate**
-- **Maven**
-- **Banco de dados relacional** (H2 / PostgreSQL / MySQL – configurável)
+C --- TRIP_C
+C --- DEST_C
+C --- IT_C
+C --- ACT_C
+C --- EXP_C
+C --- BUD_C
 
----
+%% ========= DATA MODEL =========
+subgraph MODEL[Modelo de Dados (JPA Entities)]
+USER[User]
+TRIP[Trip]
+DEST[Destination]
+DAY[ItineraryDay]
+ACT[Activity]
+EXP[Expense]
+BUD[Budget]
+RT[RefreshToken]
 
-## 🔐 Autenticação e Segurança
+    USER -->|1:N owner| TRIP
+    TRIP -->|N:1| DEST
+    TRIP -->|1:N| DAY
+    DAY -->|1:N| ACT
+    TRIP -->|1:N| EXP
+    TRIP -->|1:1 unique| BUD
+    USER -->|1:N| RT
+end
 
-A aplicação utiliza autenticação baseada em **JWT**.
-
-### Fluxo de autenticação:
-
-1. O usuário realiza login via endpoint:
-
-
-**POST /auth/login**
-2. A API valida as credenciais
-3. Um token JWT é gerado
-4. O token deve ser enviado no header das requisições protegidas:
-
-Authorization: Bearer <token>
-
-
-📌 Endpoints Principais
-Autenticação
-
-POST /auth/login → login e geração de token JWT
-
-Usuários
-
-Endpoints protegidos por autenticação JWT
-
-Utilização de DTOs para entrada e saída de dados
-
-🛠️ Como Executar o Projeto
-Pré-requisitos
-
-Java 17+
-
-Maven
-
-Passos:
-# Clonar o repositório
-git clone https://github.com/SEU_USUARIO/travelapp-spring-jwt.git
-
-# Entrar no diretório
-cd travelapp-spring-jwt
-
-# Rodar a aplicação
-mvn spring-boot:run
-
-A aplicação estará disponível em: http://localhost:8080
-
-🧪 Status do Projeto
-
-🚧 Em desenvolvimento
-
-Próximos passos planejados:
-
-Implementação de roles (USER / ADMIN)
-
-Documentação com Swagger/OpenAPI
-
-Testes unitários
-
-Deploy em ambiente cloud (AWS)
-
-
-Authorization: Bearer <token>
-5. O token é validado pelo `JwtAuthenticationFilter`
-
----
-
-## 📦 Estrutura do Projeto
-
-```text
-src/main/java/com/travelapp
-│
-├── controller
-│   ├── AuthController
-│   ├── UserController
-│   └── TestController
-│
-├── dto
-│   ├── request
-│   └── response
-│
-├── entity
-│   └── User
-│
-├── repository
-│   └── UserRepository
-│
-├── security
-│   ├── SecurityConfig
-│   ├── JwtAuthenticationFilter
-│   ├── JwtService
-│   └── CustomUserDetailsService
-│
-├── service
-│   └── UserService
-│
-└── TravelAppApplication
+%% ========= REPO -> MODEL -> DB =========
+USER_REPO --> USER --> DB
+RT_REPO --> RT --> DB
+TRIP_R --> TRIP --> DB
+DEST_R --> DEST --> DB
+IT_R --> DAY --> DB
+ACT_R --> ACT --> DB
+EXP_R --> EXP --> DB
+BUD_R --> BUD --> DB
