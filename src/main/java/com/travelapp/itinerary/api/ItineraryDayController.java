@@ -20,7 +20,7 @@ public class ItineraryDayController {
     private final ItineraryDayService itineraryDayService;
 
     @PostMapping
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public ItineraryDayResponse create(
             @RequestBody @Valid ItineraryDayCreateRequest request,
             @AuthenticationPrincipal User user
@@ -29,7 +29,7 @@ public class ItineraryDayController {
     }
 
     @GetMapping("/trip/{tripId}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public List<ItineraryDayResponse> listByTrip(
             @PathVariable Long tripId,
             @AuthenticationPrincipal User user

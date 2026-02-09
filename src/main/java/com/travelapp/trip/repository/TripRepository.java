@@ -15,23 +15,20 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
 
     boolean existsByIdAndOwnerId(Long id, Long ownerId);
 
-    @Query("""
-        select
-            t.id as tripId,
-            t.title as title,
-            t.startDate as startDate,
-            t.endDate as endDate,
-            (CAST(FUNCTION('date_part', 'day', t.endDate - t.startDate) as integer) + 1) as totalDays,
-            (select count(d) from ItineraryDay d where d.trip.id = t.id) as itineraryDaysCount,
-            (select count(a) from Activity a where a.itineraryDay.trip.id = t.id) as activitiesCount,
-            (select count(e) from Expense e where e.trip.id = t.id) as expensesCount,
-            (select coalesce(sum(e.amount), 0) from Expense e where e.trip.id = t.id) as expensesTotal,
-            coalesce(
-                (select b.limitAmount from Budget b where b.trip.id = t.id),
-                0
-            ) as budgetTotal
-        from Trip t
-        where t.id = :tripId
-    """)
+    @Query(value = """
+    select
+      t.id as tripId,
+      t.title as title,
+      t.start_date as startDate,
+      t.end_date as endDate,
+      (t.end_date - t.start_date + 1) as totalDays,
+      (select count(*) from itinerary_days d where d.trip_id = t.id) as itineraryDaysCount,
+      (select count(*) from activities a join itinerary_days d on d.id = a.itinerary_day_id where d.trip_id = t.id) as activitiesCount,
+      (select count(*) from expenses e where e.trip_id = t.id) as expensesCount,
+      (select coalesce(sum(e.amount),0) from expenses e where e.trip_id = t.id) as expensesTotal,
+      coalesce((select b.limit_amount from budgets b where b.trip_id = t.id),0) as budgetTotal
+    from trips t
+    where t.id = :tripId
+""", nativeQuery = true)
     Optional<TripSummaryProjection> findTripSummary(@Param("tripId") Long tripId);
 }

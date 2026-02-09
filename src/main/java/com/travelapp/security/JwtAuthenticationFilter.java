@@ -30,10 +30,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String method = request.getMethod();
 
         return HttpMethod.OPTIONS.matches(method)
-                // públicos
-                || path.startsWith("/api/auth") // ✅ login/refresh/logout
-                || (path.equals("/api/users") && HttpMethod.POST.matches(method)) // ✅ cadastro
-                // swagger
+                || path.startsWith("/api/auth")
+                || (path.equals("/api/users") && HttpMethod.POST.matches(method))
                 || path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs")
                 || path.equals("/swagger-ui.html");
@@ -48,6 +46,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
+        // sem bearer -> segue sem autenticar (e o SecurityChain decide 401/403 depois)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -55,22 +54,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String jwt = authHeader.substring(7).trim();
 
-        // Guard simples para evitar exception por token zoado
-        long dotCount = jwt.chars().filter(ch -> ch == '.').count();
-        if (dotCount != 2) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         try {
             final String username = jwtService.extractUsername(jwt);
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
-
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,
@@ -80,10 +70,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                } else {
+                    // ✅ token existe mas não é válido -> 401 direto (pra não virar 403 confuso)
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired JWT");
+                    return;
                 }
             }
+
         } catch (JwtException | IllegalArgumentException e) {
-            // token inválido -> não autentica; segue o fluxo
+            // ✅ token malformado/assinado errado/etc -> 401 direto
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT");
+            return;
         }
 
         filterChain.doFilter(request, response);

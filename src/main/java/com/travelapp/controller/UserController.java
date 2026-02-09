@@ -34,7 +34,7 @@ public class UserController {
      * Endpoint protegido (JWT obrigatório)
      * GET /api/users/me
      */
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @GetMapping("/me")
     public UserResponse me(
             @AuthenticationPrincipal User user

@@ -98,3 +98,8 @@ end
 REPO --> MODEL
 MODEL --> DB
 ```
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 2e63758fea0a348edfdbfc202a39cbdcdb77bde2

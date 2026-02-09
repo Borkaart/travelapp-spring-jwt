@@ -23,7 +23,7 @@ public class TripController {
     private final TripSummaryService tripSummaryService;
 
     @PostMapping
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public TripResponse create(
             @RequestBody @Valid TripCreateRequest request,
             @AuthenticationPrincipal User user
@@ -32,7 +32,7 @@ public class TripController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public Page<TripResponse> myTrips(
             @AuthenticationPrincipal User user,
             Pageable pageable
@@ -41,7 +41,7 @@ public class TripController {
     }
 
     @GetMapping("/{tripId}/summary")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public TripSummaryProjection summary(
             @PathVariable Long tripId,
             @AuthenticationPrincipal User user
