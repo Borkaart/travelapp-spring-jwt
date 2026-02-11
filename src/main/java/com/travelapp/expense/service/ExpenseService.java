@@ -63,10 +63,8 @@ public class ExpenseService {
     @Transactional
     public ExpenseResponse update(Long expenseId, ExpenseUpdateRequest request, User user) {
 
-        Expense expense = expenseRepository.findById(expenseId)
+        Expense expense = expenseRepository.findOwnedById(expenseId, user.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Expense not found"));
-
-        assertOwner(expense.getTrip(), user);
 
         if (request.getAmount() != null) {
             validateAmount(request.getAmount());
@@ -115,10 +113,8 @@ public class ExpenseService {
     @Transactional
     public void delete(Long expenseId, User user) {
 
-        Expense expense = expenseRepository.findById(expenseId)
+        Expense expense = expenseRepository.findOwnedById(expenseId, user.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Expense not found"));
-
-        assertOwner(expense.getTrip(), user);
 
         expenseRepository.delete(expense);
     }

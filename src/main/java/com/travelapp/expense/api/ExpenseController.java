@@ -6,8 +6,10 @@ import com.travelapp.expense.dto.ExpenseResponse;
 import com.travelapp.expense.dto.ExpenseSummaryResponse;
 import com.travelapp.expense.dto.ExpenseUpdateRequest;
 import com.travelapp.expense.service.ExpenseService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,16 +22,16 @@ public class ExpenseController {
 
     private final ExpenseService expenseService;
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public ExpenseResponse create(
-            @RequestBody ExpenseCreateRequest request,
+            @RequestBody @Valid ExpenseCreateRequest request,
             @AuthenticationPrincipal User user
     ) {
         return expenseService.create(request, user);
     }
 
-    @GetMapping("/trip/{tripId}")
+    @GetMapping(value = "/trip/{tripId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<ExpenseResponse> listByTrip(
             @PathVariable Long tripId,
             @AuthenticationPrincipal User user
@@ -37,15 +39,16 @@ public class ExpenseController {
         return expenseService.listByTrip(tripId, user);
     }
 
-    @PutMapping("/{expenseId}")
+    @PutMapping(value = "/{expenseId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ExpenseResponse update(
             @PathVariable Long expenseId,
-            @RequestBody ExpenseUpdateRequest request,
+            @RequestBody @Valid ExpenseUpdateRequest request,
             @AuthenticationPrincipal User user
     ) {
         return expenseService.update(expenseId, request, user);
     }
-    @GetMapping("/trip/{tripId}/summary")
+
+    @GetMapping(value = "/trip/{tripId}/summary", produces = MediaType.APPLICATION_JSON_VALUE)
     public ExpenseSummaryResponse summary(
             @PathVariable Long tripId,
             @AuthenticationPrincipal User user

@@ -8,6 +8,7 @@ import com.travelapp.entity.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,7 +21,7 @@ public class ActivityController {
 
     private final ActivityService activityService;
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public ActivityResponse create(
             @RequestBody @Valid ActivityCreateRequest request,
@@ -29,7 +30,7 @@ public class ActivityController {
         return activityService.create(request, user);
     }
 
-    @GetMapping("/itinerary-day/{itineraryDayId}")
+    @GetMapping(value = "/itinerary-day/{itineraryDayId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<ActivityResponse> listByItineraryDay(
             @PathVariable Long itineraryDayId,
             @AuthenticationPrincipal User user
@@ -37,7 +38,8 @@ public class ActivityController {
         return activityService.listByItineraryDay(itineraryDayId, user);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.OK)
     public ActivityResponse update(
             @PathVariable Long id,
             @RequestBody @Valid ActivityUpdateRequest request,

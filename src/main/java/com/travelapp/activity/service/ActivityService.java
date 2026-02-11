@@ -28,10 +28,8 @@ public class ActivityService {
     @Transactional
     public ActivityResponse create(ActivityCreateRequest request, User user) {
 
-        ItineraryDay day = itineraryDayRepository.findById(request.getItineraryDayId())
+        ItineraryDay day = itineraryDayRepository.findOwnedById(request.getItineraryDayId(), user.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Itinerary day not found"));
-
-        assertTripOwner(day.getTrip().getOwner().getId(), user);
 
         validateCost(request.getCost());
 
@@ -52,10 +50,8 @@ public class ActivityService {
     @Transactional(readOnly = true)
     public List<ActivityResponse> listByItineraryDay(Long itineraryDayId, User user) {
 
-        ItineraryDay day = itineraryDayRepository.findById(itineraryDayId)
+        itineraryDayRepository.findOwnedById(itineraryDayId, user.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Itinerary day not found"));
-
-        assertTripOwner(day.getTrip().getOwner().getId(), user);
 
         return activityRepository
                 .findAllByItineraryDayIdOrderByTimeAscCreatedAtAsc(itineraryDayId)
@@ -67,10 +63,11 @@ public class ActivityService {
     @Transactional
     public ActivityResponse update(Long activityId, ActivityUpdateRequest request, User user) {
 
-        Activity activity = activityRepository.findById(activityId)
+        Activity activity = activityRepository.findOwnedById(activityId, user.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
 
-        assertTripOwner(activity.getItineraryDay().getTrip().getOwner().getId(), user);
+        // ownership já garantido pela query, mas pode manter a checagem se quiser redundância:
+        // assertTripOwner(activity.getItineraryDay().getTrip().getOwner().getId(), user);
 
         validateCost(request.getCost());
 
@@ -88,10 +85,8 @@ public class ActivityService {
     @Transactional
     public void delete(Long activityId, User user) {
 
-        Activity activity = activityRepository.findById(activityId)
+        Activity activity = activityRepository.findOwnedById(activityId, user.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
-
-        assertTripOwner(activity.getItineraryDay().getTrip().getOwner().getId(), user);
 
         activityRepository.delete(activity);
     }
