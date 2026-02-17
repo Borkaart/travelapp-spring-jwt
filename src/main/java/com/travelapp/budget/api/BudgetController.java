@@ -1,8 +1,6 @@
 package com.travelapp.budget.api;
 
-import com.travelapp.budget.dto.BudgetResponse;
-import com.travelapp.budget.dto.BudgetStatusResponse;
-import com.travelapp.budget.dto.BudgetUpsertRequest;
+import com.travelapp.budget.dto.*;
 import com.travelapp.budget.service.BudgetService;
 import com.travelapp.entity.User;
 import jakarta.validation.Valid;
@@ -25,6 +23,21 @@ public class BudgetController {
             @AuthenticationPrincipal User user
     ) {
         return budgetService.upsert(request, user);
+    }
+
+    // ✅ Agora bate com o frontend: PUT /api/budgets/trip/{tripId}
+    @PutMapping("/trip/{tripId}")
+    public BudgetResponse upsertByTrip(
+            @PathVariable Long tripId,
+            @RequestBody @Valid BudgetUpsertByTripRequest body,
+            @AuthenticationPrincipal User user
+    ) {
+        BudgetUpsertRequest req = new BudgetUpsertRequest();
+        req.setTripId(tripId);
+        req.setLimitAmount(body.getLimitAmount());
+        req.setCurrency(body.getCurrency());
+
+        return budgetService.upsert(req, user);
     }
 
     @GetMapping("/trip/{tripId}")

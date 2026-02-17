@@ -1,105 +1,190 @@
-📌 Project Overview
+# TravelApp API
 
-TravelApp is a RESTful backend application built with Spring Boot that manages users and travel activities. The project follows a layered architecture focused on separation of concerns, maintainability, and scalability.
+REST API for managing trips, itineraries, activities and expenses with real-time budget tracking.
 
-The system handles:
+This project was built as a full-stack portfolio application focusing on:
 
-User management and authentication
+* Clean architecture principles
+* Domain-driven organization
+* JWT authentication
+* Financial consistency (budget health calculation)
+* Real world relational modeling
 
-Activity creation and tracking
+---
 
-Structured API communication using DTOs
+## Tech Stack
 
-Secure endpoints with Spring Security
+* Java 17
+* Spring Boot
+* Spring Security + JWT
+* Spring Data JPA (Hibernate)
+* PostgreSQL
+* Maven
 
-🏗 Architecture
+---
 
-The application uses a layered architecture where each component has a clear responsibility:
+## Features
 
-Controller layer — exposes REST endpoints
+### Authentication
 
-Service layer — contains business logic
+* User registration
+* Login with JWT
+* Token validation
+* Stateless security
 
-Domain layer — core entities and rules
+### Trips
 
-DTO layer — request/response models
+* Create and manage trips
+* Date range calculation
+* Trip summary aggregation
 
-The diagram below illustrates how these components interact:
+### Itinerary
 
+* Day planning
+* Activity scheduling
 
-```mermaid
-flowchart LR
+### Activities
 
-%% ========= FRONT -> BACK =========
-FE["Frontend - Vite React"] -->|"HTTP JSON"| CTRL["Controllers"]
+* Categorized activities
+* Linked to itinerary days
 
-%% ========= APP CORE =========
-subgraph APP["Spring Boot App"]
-CTRL --> SVC["Services"]
-SVC --> REPO["Repositories"]
-REPO --> DB["PostgreSQL"]
+### Expenses
 
-EX["GlobalExceptionHandler"] -.-> CTRL
+* Create / update / delete expenses
+* Expense categories
+* Automatic trip total calculation
 
-%% ========= SECURITY =========
-subgraph SECURITY["Security"]
-JWTF["JwtAuthenticationFilter"] --> JWTS["JwtService"]
-JWTF --> UDS["CustomUserDetailsService"]
-UDS --> USERREPO["UserRepository"]
+### Budget
 
-AUTHC["AuthController"] --> AUTHM["AuthenticationManager"]
-AUTHC --> RTS["RefreshTokenService"]
-RTS --> RTREPO["RefreshTokenRepository"]
-end
+* Budget limit per trip
+* Real-time budget health:
 
-CTRL --> SECURITY
-end
+    * healthy (< 70%)
+    * warning (< 90%)
+    * danger (< 100%)
+    * exceeded (> 100%)
 
-%% ========= DOMAINS (HTTP -> Service -> Repo) =========
-subgraph DOMAINS["Domains"]
-TRIP_C["TripController"] --> TRIP_S["TripService"] --> TRIP_R["TripRepository"]
-TRIP_C --> SUM_S["TripSummaryService"] --> TRIP_R
+---
 
-DEST_C["DestinationController"] --> DEST_S["DestinationService"] --> DEST_R["DestinationRepository"]
+## Domain Concepts
 
-IT_C["ItineraryDayController"] --> IT_S["ItineraryDayService"] --> IT_R["ItineraryDayRepository"]
+The system models a real travel planning workflow:
 
-ACT_C["ActivityController"] --> ACT_S["ActivityService"] --> ACT_R["ActivityRepository"]
-ACT_S --> IT_R
+User → Trip → ItineraryDay → Activity
+User → Trip → Expense → BudgetHealth
 
-EXP_C["ExpenseController"] --> EXP_S["ExpenseService"] --> EXP_R["ExpenseRepository"]
+Budget health is calculated dynamically from total expenses vs budget limit.
 
-BUD_C["BudgetController"] --> BUD_S["BudgetService"] --> BUD_R["BudgetRepository"]
-BUD_S --> TRIP_R
-end
+---
 
-CTRL --> DOMAINS
+## Running the project
 
-%% ========= DATA MODEL =========
-subgraph MODEL["Data Model (JPA)"]
-USER["User"]
-TRIP["Trip"]
-DEST["Destination"]
-DAY["ItineraryDay"]
-ACT["Activity"]
-EXP["Expense"]
-BUD["Budget"]
-RT["RefreshToken"]
+### 1 — Database
 
-USER -->|"1..N"| TRIP
-TRIP -->|"N..1"| DEST
-TRIP -->|"1..N"| DAY
-DAY -->|"1..N"| ACT
-TRIP -->|"1..N"| EXP
-TRIP -->|"1..1 (unique)"| BUD
-USER -->|"1..N"| RT
-end
+Create a PostgreSQL database:
 
-REPO --> MODEL
-MODEL --> DB
 ```
-<<<<<<< HEAD
-=======
+travelapp
+```
 
+Update `application.properties`:
 
->>>>>>> 2e63758fea0a348edfdbfc202a39cbdcdb77bde2
+```
+spring.datasource.url=jdbc:postgresql://localhost:5432/travelapp
+spring.datasource.username=YOUR_USER
+spring.datasource.password=YOUR_PASSWORD
+spring.jpa.hibernate.ddl-auto=update
+```
+
+---
+
+### 2 — Run the API
+
+```
+./mvnw spring-boot:run
+```
+
+Server will start at:
+
+```
+http://localhost:8080
+```
+
+---
+
+## Authentication
+
+All protected endpoints require:
+
+```
+Authorization: Bearer <token>
+```
+
+Get token via:
+
+```
+POST /auth/login
+```
+
+---
+
+## Main Endpoints
+
+### Auth
+
+POST /auth/register
+POST /auth/login
+
+### Trips
+
+GET /trips
+POST /trips
+GET /trips/{id}/summary
+
+### Budget
+
+PUT /trips/{id}/budget
+
+### Expenses
+
+GET /trips/{id}/expenses
+POST /expenses
+PUT /expenses/{id}
+DELETE /expenses/{id}
+
+---
+
+## Project Structure
+
+```
+domain        → business rules and calculations
+service       → use cases
+repository    → persistence
+controller    → HTTP layer
+security      → authentication and filters
+```
+
+---
+
+## Design Decisions
+
+The project intentionally separates domain logic from controllers.
+Business rules such as budget health are not implemented in the frontend
+to guarantee consistency across clients.
+
+---
+
+## Future Improvements
+
+* Multi currency support
+* Trip sharing between users
+* Export to PDF
+* Notifications
+* Caching layer (Redis)
+* Docker containerization
+
+---
+
+## Author
+
+Paulo Henrique dos Anjos

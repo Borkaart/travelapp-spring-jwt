@@ -74,6 +74,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     // ✅ token existe mas não é válido -> 401 direto (pra não virar 403 confuso)
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired JWT");
                     return;
+
                 }
             }
 
