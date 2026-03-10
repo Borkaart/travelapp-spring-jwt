@@ -1,36 +1,24 @@
-# Railway Environment Variables
+# Railway Environment Variables - Configuração Correta
 
-Configure estas variáveis EXATAMENTE no painel do Railway:
+## ⚠️ IMPORTANTE: Siga EXATAMENTE estes passos
 
-## Option 1: Use DATABASE_URL (Recomendado)
+### Passo 1: Obter a Connection String do PostgreSQL
 
-Se o Railway fornece `DATABASE_URL`, configure APENAS:
+1. No painel do Railway
+2. Clique no serviço **PostgreSQL**
+3. Vá para aba **"Connect"**
+4. Copie a **CONNECTION STRING** (deve começar com `postgresql://`)
+5. Guarde esse valor
 
-```
-SPRING_DATASOURCE_URL=postgresql://user:password@host:port/database
-```
+### Passo 2: Configurar Variáveis no Spring Boot
 
-Converta de `postgres://` para `postgresql://` se necessário.
-
-## Option 2: Manual JDBC URL (Se DATABASE_URL não funcionar)
-
-Configure explicitamente:
+No serviço Spring Boot, vá para **"Variables"** e configure:
 
 ```
-SPRING_DATASOURCE_URL=jdbc:postgresql://PGHOST:5432/PGDATABASE
-SPRING_DATASOURCE_USERNAME=PGUSER
-SPRING_DATASOURCE_PASSWORD=PGPASSWORD
-```
-
-Substitua PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD pelos valores reais do Railway.
-
-## Todas as Variáveis Necessárias
-
-```
-SPRING_DATASOURCE_URL=<seu_database_url_aqui>
+SPRING_DATASOURCE_URL=<COLE_A_CONNECTION_STRING_AQUI>
 JWT_SECRET=secret
 JWT_EXPIRATION=14400000
-APP_CORS_ALLOWED_ORIGINS=https://travelapp.x10.network
+APP_CORS_ALLOWED_ORIGINS=https://travelapp-frontend.vercel.app
 
 UNSPLASH_ENABLED=true
 UNSPLASH_ACCESS_KEY=8lzA8R-rI4fIbZ9hegBRNBxhA72WuFsUHy-EnfLe-0k
@@ -44,13 +32,26 @@ AMADEUS_CLIENT_SECRET=XvyHw6RSzhVj016Z
 AMADEUS_BASE_URL=https://test.api.amadeus.com
 ```
 
-## Passos:
+### Exemplo de CONNECTION STRING:
+```
+postgresql://postgres:senha123@containers-us-west-123.railway.app:7890/railway
+```
 
-1. Vá ao painel do Railway
-2. Abra o serviço do PostgreSQL
-3. Copie a CONNECTION STRING completa
-4. No serviço do Spring Boot, vá para "Variables"
-5. Adicione `SPRING_DATASOURCE_URL=<connection_string_aqui>`
-6. Adicione as outras variáveis
-7. Faça um redeploy manual
+**Não use `jdbc:postgresql://` - apenas `postgresql://`**
+
+### Passo 3: Redeploy
+
+1. Salve as variáveis
+2. Clique em "Redeploy" no serviço Spring Boot
+3. Aguarde 5-10 minutos
+4. Teste: `https://travelapp-spring-jwt-production.up.railway.app/api/health`
+
+### Se ainda crashar:
+
+Verifique os **Logs** do deployment (aba "Deployments" > "View Logs") e procure por:
+- `Unable to connect to database`
+- `Connection refused`
+- `No suitable driver found`
+
+Se encontrar algum desses, me compartilhe o erro completo!
 
