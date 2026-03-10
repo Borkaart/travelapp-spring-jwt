@@ -25,7 +25,7 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/login")
-    public AuthResponse login(@RequestBody LoginRequest request) {
+    public AuthResponse login(@RequestBody @Valid LoginRequest request) {
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -45,6 +45,7 @@ public class AuthController {
                 .expiresIn(jwtService.getJwtExpirationSeconds())
                 .build();
     }
+
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void logout(@RequestBody @Valid RefreshRequest request) {

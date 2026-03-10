@@ -48,6 +48,15 @@ public class TripController {
         return tripService.listMyTrips(user, safePageable);
     }
 
+    @GetMapping("/{tripId}")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    public TripResponse getById(
+            @PathVariable Long tripId,
+            @AuthenticationPrincipal User user
+    ) {
+        return tripService.getById(tripId, user);
+    }
+
     private Pageable sanitizePageable(Pageable pageable) {
         Sort safeSort = Sort.unsorted();
 

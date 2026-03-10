@@ -1,17 +1,17 @@
 HELP.md
 
-### Maven ###
+### Nota minha: arquivos e pastas do Maven ###
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-### Gradle (caso use futuramente) ###
+### Nota minha: arquivos do Gradle (se eu usar depois) ###
 build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### Spring Tool Suite ###
+### Nota minha: metadados do Spring Tool Suite ###
 .apt_generated
 .classpath
 .factorypath
@@ -20,36 +20,36 @@ build/
 .springBeans
 .sts4-cache
 
-### IntelliJ IDEA ###
+### Nota minha: metadados da IntelliJ IDEA ###
 .idea
 *.iws
 *.iml
 *.ipr
 out/
 
-### NetBeans ###
+### Nota minha: metadados do NetBeans ###
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
 
-### VS Code ###
+### Nota minha: metadados do VS Code ###
 .vscode/
 
-### Logs ###
+### Nota minha: logs locais ###
 *.log
 logs/
 
-### OS ###
+### Nota minha: arquivos de sistema operacional ###
 .DS_Store
 Thumbs.db
 
-### Environment / Secrets ###
+### Nota minha: arquivos de ambiente e segredos ###
 .env
 .env.*
 *.pem
 *.key
 
-### Testes ###
+### Nota minha: saidas de testes ###
 /test-output/

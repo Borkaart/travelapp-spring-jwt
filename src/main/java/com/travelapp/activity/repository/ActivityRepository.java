@@ -10,7 +10,16 @@ import java.util.Optional;
 
 public interface ActivityRepository extends JpaRepository<Activity, Long> {
 
-    List<Activity> findAllByItineraryDayIdOrderByTimeAscCreatedAtAsc(Long itineraryDayId);
+    List<Activity> findAllByItineraryDayIdOrderBySortOrderAscCreatedAtAsc(Long itineraryDayId);
+
+    List<Activity> findAllByItineraryDayId(Long itineraryDayId);
+
+    @Query("""
+        select coalesce(max(a.sortOrder), 0)
+        from Activity a
+        where a.itineraryDay.id = :itineraryDayId
+    """)
+    Integer findMaxSortOrderByItineraryDayId(@Param("itineraryDayId") Long itineraryDayId);
 
     @Query("""
         select a

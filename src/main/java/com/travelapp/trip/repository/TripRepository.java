@@ -24,6 +24,7 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
       (t.end_date - t.start_date + 1) as totalDays,
       (select count(*) from itinerary_days d where d.trip_id = t.id) as itineraryDaysCount,
       (select count(*) from activities a join itinerary_days d on d.id = a.itinerary_day_id where d.trip_id = t.id) as activitiesCount,
+      (select coalesce(sum(a.cost),0) from activities a join itinerary_days d on d.id = a.itinerary_day_id where d.trip_id = t.id) as itineraryPlannedTotal,
       (select count(*) from expenses e where e.trip_id = t.id) as expensesCount,
       (select coalesce(sum(e.amount),0) from expenses e where e.trip_id = t.id) as expensesTotal,
       coalesce((select b.limit_amount from budgets b where b.trip_id = t.id),0) as budgetTotal

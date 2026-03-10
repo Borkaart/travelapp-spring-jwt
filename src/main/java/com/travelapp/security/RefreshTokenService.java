@@ -24,7 +24,7 @@ public class RefreshTokenService {
 
     @Transactional
     public RefreshToken createForLogin(User user) {
-        // Ao logar, remove tokens anteriores do usuário (mantém simples e seguro)
+        // Quando o usuario loga, eu removo os tokens antigos para manter o fluxo simples e seguro.
         refreshTokenRepository.deleteByUser(user);
 
         return refreshTokenRepository.save(buildToken(user));
@@ -43,11 +43,11 @@ public class RefreshTokenService {
             throw new InvalidRefreshTokenException("Refresh token expired");
         }
 
-        // Revoga o token antigo (rotação)
+        // Aqui eu revogo o token antigo para fazer a rotacao.
         existing.setRevoked(true);
         refreshTokenRepository.save(existing);
 
-        // Emite um novo refresh token para o mesmo usuário
+        // Depois eu emito um novo refresh token para o mesmo usuario.
         RefreshToken newToken = buildToken(existing.getUser());
         return refreshTokenRepository.save(newToken);
     }

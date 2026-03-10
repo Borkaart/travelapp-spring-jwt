@@ -22,6 +22,7 @@ public class ActivityResponse {
 
     private LocalTime time;
     private BigDecimal cost;
+    private Integer sortOrder;
 
     private LocalDateTime createdAt;
 }

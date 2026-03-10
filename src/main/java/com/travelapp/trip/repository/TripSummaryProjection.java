@@ -14,6 +14,7 @@ public interface TripSummaryProjection {
 
     Long getItineraryDaysCount();
     Long getActivitiesCount();
+    BigDecimal getItineraryPlannedTotal();
     Long getExpensesCount();
 
     BigDecimal getExpensesTotal();

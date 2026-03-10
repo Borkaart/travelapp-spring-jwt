@@ -46,7 +46,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
-        // sem bearer -> segue sem autenticar (e o SecurityChain decide 401/403 depois)
+        // Se nao vier Bearer, eu deixo seguir sem autenticar e o SecurityChain decide 401/403 depois.
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -71,7 +71,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 } else {
-                    // ✅ token existe mas não é válido -> 401 direto (pra não virar 403 confuso)
+                    // Se o token vier invalido, eu retorno 401 direto para nao virar 403 confuso.
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired JWT");
                     return;
 
@@ -79,7 +79,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
         } catch (JwtException | IllegalArgumentException e) {
-            // ✅ token malformado/assinado errado/etc -> 401 direto
+            // Se o token vier malformado ou com assinatura errada, eu retorno 401 direto.
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT");
             return;
         }

@@ -26,7 +26,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
 
-    // Se você já tem esses 2 handlers, use eles aqui (se não tiver, me diga que eu te mando)
+    // Lembrete meu: mantenho esses handlers aqui para diferenciar falhas de autenticacao e autorizacao.
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
@@ -58,10 +58,10 @@ public class SecurityConfig {
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
 
-                // ✅ aqui é o que deixa claro 401 vs 403
+                // Aqui eu defino explicitamente 401 vs 403.
                 .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)  // 401
-                        .accessDeniedHandler(jwtAccessDeniedHandler)            // 403
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)  // Eu retorno 401 quando nao autenticou.
+                        .accessDeniedHandler(jwtAccessDeniedHandler)            // Eu retorno 403 quando autenticou mas nao tem permissao.
                 )
 
                 .authorizeHttpRequests(auth -> auth

@@ -19,7 +19,7 @@ public class UserController {
     private final UserService userService;
 
     /**
-     * Endpoint público
+     * Lembrete meu: este endpoint e publico.
      * POST /api/users
      */
     @PostMapping
@@ -31,7 +31,7 @@ public class UserController {
     }
 
     /**
-     * Endpoint protegido (JWT obrigatório)
+     * Lembrete meu: este endpoint exige JWT valido.
      * GET /api/users/me
      */
     @PreAuthorize("hasAnyRole('USER','ADMIN')")

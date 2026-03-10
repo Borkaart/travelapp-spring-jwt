@@ -20,7 +20,7 @@ public class Expense {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // dono indireto: expense -> trip -> owner
+    // Lembrete meu: o dono vem de forma indireta (expense -> trip -> owner).
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "trip_id", nullable = false)
     private Trip trip;
@@ -33,12 +33,12 @@ public class Expense {
     private ExpenseCategory category;
 
     @Column(length = 120)
-    private String title; // ex: "Uber aeroporto"
+    private String title; // Exemplo meu: "Uber aeroporto".
 
     @Column(length = 3)
-    private String currency; // "BRL", "USD" (opcional)
+    private String currency; // Eu uso codigos como "BRL" e "USD" quando precisar.
 
-    private LocalDateTime spentAt; // quando gastou (opcional)
+    private LocalDateTime spentAt; // Eu preencho quando quiser registrar o momento do gasto.
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

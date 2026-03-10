@@ -25,7 +25,7 @@ public class BudgetController {
         return budgetService.upsert(request, user);
     }
 
-    // ✅ Agora bate com o frontend: PUT /api/budgets/trip/{tripId}
+    // Mantive essa rota assim para bater com o frontend: PUT /api/budgets/trip/{tripId}.
     @PutMapping("/trip/{tripId}")
     public BudgetResponse upsertByTrip(
             @PathVariable Long tripId,

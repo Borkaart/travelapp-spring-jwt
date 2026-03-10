@@ -8,10 +8,9 @@ import com.travelapp.budget.repository.BudgetRepository;
 import com.travelapp.entity.User;
 import com.travelapp.expense.repository.ExpenseRepository;
 import com.travelapp.trip.domain.Trip;
-import com.travelapp.trip.repository.TripRepository;
+import com.travelapp.trip.service.TripAccessService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,15 +22,12 @@ import java.time.LocalDateTime;
 public class BudgetService {
 
     private final BudgetRepository budgetRepository;
-    private final TripRepository tripRepository;
+    private final TripAccessService tripAccessService;
     private final ExpenseRepository expenseRepository;
 
     @Transactional
     public BudgetResponse upsert(BudgetUpsertRequest request, User user) {
-        Trip trip = tripRepository.findById(request.getTripId())
-                .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
-
-        assertOwner(trip, user);
+        Trip trip = tripAccessService.getOwnedTrip(request.getTripId(), user);
 
         Budget budget = budgetRepository.findByTripId(trip.getId())
                 .orElseGet(() -> Budget.builder()
@@ -49,10 +45,7 @@ public class BudgetService {
 
     @Transactional(readOnly = true)
     public BudgetResponse getByTrip(Long tripId, User user) {
-        Trip trip = tripRepository.findById(tripId)
-                .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
-
-        assertOwner(trip, user);
+        Trip trip = tripAccessService.getOwnedTrip(tripId, user);
 
         Budget budget = budgetRepository.findByTripId(tripId)
                 .orElseThrow(() -> new EntityNotFoundException("Budget not found"));
@@ -62,10 +55,7 @@ public class BudgetService {
 
     @Transactional(readOnly = true)
     public BudgetStatusResponse status(Long tripId, User user) {
-        Trip trip = tripRepository.findById(tripId)
-                .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
-
-        assertOwner(trip, user);
+        Trip trip = tripAccessService.getOwnedTrip(tripId, user);
 
         Budget budget = budgetRepository.findByTripId(tripId)
                 .orElseThrow(() -> new EntityNotFoundException("Budget not found"));
@@ -82,12 +72,6 @@ public class BudgetService {
                 .remaining(remaining)
                 .exceeded(exceeded)
                 .build();
-    }
-
-    private void assertOwner(Trip trip, User user) {
-        if (!trip.getOwner().getId().equals(user.getId())) {
-            throw new AccessDeniedException("Not your trip");
-        }
     }
 
     private BudgetResponse toResponse(Budget b) {

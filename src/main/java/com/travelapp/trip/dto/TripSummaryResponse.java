@@ -25,13 +25,13 @@ public class TripSummaryResponse {
     private BigDecimal totalSpent;
     private long expensesCount;
 
-    private BigDecimal budgetLimit;     // null se não tiver budget
-    private BigDecimal budgetRemaining; // null se não tiver budget
-    private boolean budgetExceeded;     // false se não tiver budget
+    private BigDecimal budgetLimit;     // Eu deixo null quando a viagem nao tiver budget.
+    private BigDecimal budgetRemaining; // Eu deixo null quando a viagem nao tiver budget.
+    private boolean budgetExceeded;     // Eu deixo false quando a viagem nao tiver budget.
 
     private long activitiesCount;
 
-    // opcional: total por categoria (se você quiser)
+    // Lembrete meu: esse total por categoria e opcional no resumo.
     private List<CategoryTotal> totalsByCategory;
 
     @Getter

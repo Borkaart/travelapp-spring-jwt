@@ -30,7 +30,7 @@ public class UserService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .createdAt(LocalDateTime.now())
-                .role(Role.USER) // ✅ enum, não String
+                .role(Role.USER) // Aqui eu atribuo o enum Role.USER, nao uma String.
                 .build();
 
         User savedUser = userRepository.save(user);

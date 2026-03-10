@@ -1,6 +1,7 @@
 package com.travelapp.activity.api;
 
 import com.travelapp.activity.dto.ActivityCreateRequest;
+import com.travelapp.activity.dto.ActivityReorderRequest;
 import com.travelapp.activity.dto.ActivityResponse;
 import com.travelapp.activity.dto.ActivityUpdateRequest;
 import com.travelapp.activity.service.ActivityService;
@@ -46,6 +47,15 @@ public class ActivityController {
             @AuthenticationPrincipal User user
     ) {
         return activityService.update(id, request, user);
+    }
+
+    @PostMapping(value = "/reorder", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public List<ActivityResponse> reorder(
+            @RequestBody @Valid ActivityReorderRequest request,
+            @AuthenticationPrincipal User user
+    ) {
+        return activityService.reorder(request, user);
     }
 
     @DeleteMapping("/{id}")

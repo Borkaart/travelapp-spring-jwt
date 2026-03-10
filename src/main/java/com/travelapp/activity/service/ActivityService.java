@@ -2,6 +2,7 @@ package com.travelapp.activity.service;
 
 import com.travelapp.activity.domain.Activity;
 import com.travelapp.activity.dto.ActivityCreateRequest;
+import com.travelapp.activity.dto.ActivityReorderRequest;
 import com.travelapp.activity.dto.ActivityResponse;
 import com.travelapp.activity.dto.ActivityUpdateRequest;
 import com.travelapp.activity.repository.ActivityRepository;
@@ -16,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -41,20 +44,57 @@ public class ActivityService {
                 .notes(request.getNotes())
                 .time(request.getTime())
                 .cost(request.getCost())
+                .sortOrder(nextSortOrder(day.getId()))
                 .createdAt(LocalDateTime.now())
                 .build();
 
         return toResponse(activityRepository.save(activity));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<ActivityResponse> listByItineraryDay(Long itineraryDayId, User user) {
 
         itineraryDayRepository.findOwnedById(itineraryDayId, user.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Itinerary day not found"));
 
+        normalizeSortOrder(itineraryDayId);
+
         return activityRepository
-                .findAllByItineraryDayIdOrderByTimeAscCreatedAtAsc(itineraryDayId)
+                .findAllByItineraryDayIdOrderBySortOrderAscCreatedAtAsc(itineraryDayId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional
+    public List<ActivityResponse> reorder(ActivityReorderRequest request, User user) {
+        itineraryDayRepository.findOwnedById(request.getItineraryDayId(), user.getId())
+                .orElseThrow(() -> new EntityNotFoundException("Itinerary day not found"));
+
+        List<Activity> activities = activityRepository.findAllByItineraryDayId(request.getItineraryDayId());
+        if (activities.size() != request.getActivityIds().size()) {
+            throw new IllegalArgumentException("Activity list does not match itinerary day");
+        }
+
+        Set<Long> currentIds = new HashSet<>(activities.stream().map(Activity::getId).toList());
+        Set<Long> requestedIds = new HashSet<>(request.getActivityIds());
+
+        if (!currentIds.equals(requestedIds)) {
+            throw new IllegalArgumentException("Activity list does not match itinerary day");
+        }
+
+        int index = 1;
+        for (Long activityId : request.getActivityIds()) {
+            Activity activity = activities.stream()
+                    .filter(item -> item.getId().equals(activityId))
+                    .findFirst()
+                    .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
+            activity.setSortOrder(index++);
+        }
+
+        activityRepository.saveAll(activities);
+
+        return activityRepository.findAllByItineraryDayIdOrderBySortOrderAscCreatedAtAsc(request.getItineraryDayId())
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -66,12 +106,12 @@ public class ActivityService {
         Activity activity = activityRepository.findOwnedById(activityId, user.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
 
-        // ownership já garantido pela query, mas pode manter a checagem se quiser redundância:
+        // A query ja garante ownership; deixei o assert comentado como lembrete de redundancia.
         // assertTripOwner(activity.getItineraryDay().getTrip().getOwner().getId(), user);
 
         validateCost(request.getCost());
 
-        // PATCH-like: só atualiza o que veio
+        // Aqui eu atualizo so os campos que vieram na requisicao (estilo PATCH).
         if (request.getType() != null) activity.setType(request.getType());
         if (request.getTitle() != null) activity.setTitle(request.getTitle());
         if (request.getPlace() != null) activity.setPlace(request.getPlace());
@@ -113,7 +153,30 @@ public class ActivityService {
                 .notes(a.getNotes())
                 .time(a.getTime())
                 .cost(a.getCost())
+                .sortOrder(a.getSortOrder())
                 .createdAt(a.getCreatedAt())
                 .build();
+    }
+
+    private Integer nextSortOrder(Long itineraryDayId) {
+        Integer maxSortOrder = activityRepository.findMaxSortOrderByItineraryDayId(itineraryDayId);
+        return (maxSortOrder == null ? 0 : maxSortOrder) + 1;
+    }
+
+    private void normalizeSortOrder(Long itineraryDayId) {
+        List<Activity> activities = activityRepository.findAllByItineraryDayIdOrderBySortOrderAscCreatedAtAsc(itineraryDayId);
+        boolean changed = false;
+
+        for (int index = 0; index < activities.size(); index++) {
+            Activity activity = activities.get(index);
+            if (activity.getSortOrder() == null || !activity.getSortOrder().equals(index + 1)) {
+                activity.setSortOrder(index + 1);
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            activityRepository.saveAll(activities);
+        }
     }
 }

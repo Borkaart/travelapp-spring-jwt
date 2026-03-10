@@ -32,11 +32,11 @@ public class JwtService {
         User user = (User) userDetails;
 
         Map<String, Object> claims = new HashMap<>();
-        claims.put("role", user.getRole()); // ✅ SEM .name()
+        claims.put("role", user.getRole()); // Aqui eu salvo o enum direto, sem usar .name().
 
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(user.getUsername()) // email
+                .setSubject(user.getUsername()) // Aqui eu uso o email como subject.
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)

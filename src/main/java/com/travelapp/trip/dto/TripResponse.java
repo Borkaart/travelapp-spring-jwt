@@ -16,6 +16,7 @@ public class TripResponse {
 
     private Long destinationId;
     private String destinationName;
+    private String destinationImageUrl;
 
     private TripStatus status;
 

@@ -38,12 +38,15 @@ public class Activity {
     @Column(length = 2000)
     private String notes;
 
-    // horário opcional (muita gente planeja sem hora definida)
+    // Deixo o horario opcional porque eu posso planejar sem hora definida.
     private LocalTime time;
 
-    // custo opcional
+    // Deixo o custo opcional para eu registrar so quando fizer sentido.
     @Column(precision = 12, scale = 2)
     private BigDecimal cost;
+
+    @Column
+    private Integer sortOrder;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

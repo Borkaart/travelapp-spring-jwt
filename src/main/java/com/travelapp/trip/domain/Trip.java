@@ -21,7 +21,7 @@ public class Trip {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // título que o usuário dá para a viagem: "Férias 2026", "Lua de mel", etc.
+    // Lembrete meu: este e o titulo livre que eu dou para a viagem (ex.: "Ferias 2026").
     @Column(nullable = false, length = 120)
     private String title;
 

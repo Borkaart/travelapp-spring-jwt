@@ -8,7 +8,7 @@ import com.travelapp.itinerary.dto.ItineraryDayCreateRequest;
 import com.travelapp.itinerary.dto.ItineraryDayResponse;
 import com.travelapp.itinerary.repository.ItineraryDayRepository;
 import com.travelapp.trip.domain.Trip;
-import com.travelapp.trip.repository.TripRepository;
+import com.travelapp.trip.service.TripAccessService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,19 +21,14 @@ import java.util.List;
 public class ItineraryDayService {
 
     private final ItineraryDayRepository itineraryDayRepository;
-    private final TripRepository tripRepository;
+    private final TripAccessService tripAccessService;
+    private final ItineraryAutoPlannerService itineraryAutoPlannerService;
 
     public ItineraryDayResponse create(ItineraryDayCreateRequest request, User user) {
 
-        Trip trip = tripRepository.findById(request.getTripId())
-                .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
+        Trip trip = tripAccessService.getOwnedTrip(request.getTripId(), user);
 
-        // ownership
-        if (!trip.getOwner().getId().equals(user.getId())) {
-            throw new org.springframework.security.access.AccessDeniedException("Not your trip");
-        }
-
-        // dia dentro do range
+        // Aqui eu garanto que o dia informado esta dentro do periodo da viagem.
         if (request.getDate().isBefore(trip.getStartDate()) || request.getDate().isAfter(trip.getEndDate())) {
             throw new InvalidTripDateRangeException("Day must be within trip date range");
         }
@@ -54,12 +49,8 @@ public class ItineraryDayService {
 
     public List<ItineraryDayResponse> listByTrip(Long tripId, User user) {
 
-        Trip trip = tripRepository.findById(tripId)
-                .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
-
-        if (!trip.getOwner().getId().equals(user.getId())) {
-            throw new org.springframework.security.access.AccessDeniedException("Not your trip");
-        }
+        Trip trip = tripAccessService.getOwnedTrip(tripId, user);
+        itineraryAutoPlannerService.ensureTripDays(trip);
 
         return itineraryDayRepository.findAllByTripIdOrderByDateAsc(tripId)
                 .stream()

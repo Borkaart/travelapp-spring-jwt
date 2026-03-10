@@ -1,14 +1,14 @@
 package com.travelapp.expense.service;
 
 import com.travelapp.entity.User;
+import com.travelapp.exception.InvalidExpenseAmountException;
 import com.travelapp.expense.domain.Expense;
 import com.travelapp.expense.dto.*;
 import com.travelapp.expense.repository.ExpenseRepository;
 import com.travelapp.trip.domain.Trip;
-import com.travelapp.trip.repository.TripRepository;
+import com.travelapp.trip.service.TripAccessService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,15 +21,12 @@ import java.util.List;
 public class ExpenseService {
 
     private final ExpenseRepository expenseRepository;
-    private final TripRepository tripRepository;
+    private final TripAccessService tripAccessService;
 
     @Transactional
     public ExpenseResponse create(ExpenseCreateRequest request, User user) {
 
-        Trip trip = tripRepository.findById(request.getTripId())
-                .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
-
-        assertOwner(trip, user);
+        Trip trip = tripAccessService.getOwnedTrip(request.getTripId(), user);
 
         validateAmount(request.getAmount());
 
@@ -49,10 +46,7 @@ public class ExpenseService {
     @Transactional(readOnly = true)
     public List<ExpenseResponse> listByTrip(Long tripId, User user) {
 
-        Trip trip = tripRepository.findById(tripId)
-                .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
-
-        assertOwner(trip, user);
+        tripAccessService.getOwnedTrip(tripId, user);
 
         return expenseRepository.findAllByTripIdOrderBySpentAtAscCreatedAtAsc(tripId)
                 .stream()
@@ -89,10 +83,7 @@ public class ExpenseService {
     @Transactional(readOnly = true)
     public ExpenseSummaryResponse summary(Long tripId, User user) {
 
-        Trip trip = tripRepository.findById(tripId)
-                .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
-
-        assertOwner(trip, user);
+        tripAccessService.getOwnedTrip(tripId, user);
 
         var total = expenseRepository.sumAmountByTrip(tripId);
 
@@ -119,21 +110,9 @@ public class ExpenseService {
         expenseRepository.delete(expense);
     }
 
-    private void assertOwner(Trip trip, User user) {
-        if (trip.getOwner() == null || trip.getOwner().getId() == null || user.getId() == null) {
-            throw new AccessDeniedException("Not your trip");
-        }
-        if (!trip.getOwner().getId().equals(user.getId())) {
-            throw new AccessDeniedException("Not your trip");
-        }
-    }
-
     private void validateAmount(BigDecimal amount) {
-        if (amount == null) {
-            throw new IllegalArgumentException("Amount is required");
-        }
-        if (amount.signum() <= 0) {
-            throw new IllegalArgumentException("Amount must be greater than zero");
+        if (amount == null || amount.signum() <= 0) {
+            throw new InvalidExpenseAmountException();
         }
     }
 

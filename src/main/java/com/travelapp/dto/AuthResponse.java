@@ -17,5 +17,5 @@ public class AuthResponse {
     @Builder.Default
     private String tokenType = "Bearer";
 
-    private long expiresIn; // em segundos
+    private long expiresIn; // Eu guardo esse valor em segundos.
 }
