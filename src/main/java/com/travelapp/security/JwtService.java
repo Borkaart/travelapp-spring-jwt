@@ -11,8 +11,6 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 @Service
 public class JwtService {
@@ -31,11 +29,7 @@ public class JwtService {
 
         User user = (User) userDetails;
 
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("role", user.getRole()); // Aqui eu salvo o enum direto, sem usar .name().
-
         return Jwts.builder()
-                .setClaims(claims)
                 .setSubject(user.getUsername()) // Aqui eu uso o email como subject.
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
@@ -45,10 +39,6 @@ public class JwtService {
 
     public String extractUsername(String token) {
         return extractAllClaims(token).getSubject();
-    }
-
-    public String extractRole(String token) {
-        return extractAllClaims(token).get("role", String.class);
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
