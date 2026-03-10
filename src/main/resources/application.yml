@@ -14,7 +14,7 @@ server:
   port: ${PORT:${SERVER_PORT:8080}}
 
 jwt:
-  secret: ${JWT_SECRET:secret}
+  secret: ${JWT_SECRET:WPvHbw1zGN9Rs8BZtup4igI5CTqrKAFLhdQJMl2xUVEfX6noSY37Ome0Dkaycj}
   expiration: ${JWT_EXPIRATION:14400000}
 
 app:
@@ -36,4 +36,3 @@ amadeus:
   client-id: ${AMADEUS_CLIENT_ID:}
   client-secret: ${AMADEUS_CLIENT_SECRET:}
   base-url: ${AMADEUS_BASE_URL:https://test.api.amadeus.com}
-
