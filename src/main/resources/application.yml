@@ -20,6 +20,11 @@ spring:
 server:
   port: ${PORT:8080}
 
+logging:
+  level:
+    com.travelapp: DEBUG
+    org.springframework.security: INFO
+
 jwt:
   secret: ${JWT_SECRET:WPvHbw1zGN9Rs8BZtup4igI5CTqrKAFLhdQJMl2xUVEfX6noSY37Ome0Dkaycj}
   expiration: ${JWT_EXPIRATION:14400000}
@@ -54,6 +59,11 @@ spring:
     properties:
       hibernate:
         format_sql: false
+
+logging:
+  level:
+    com.travelapp: DEBUG
+    org.springframework.security: INFO
 
 jwt:
   secret: ${JWT_SECRET}

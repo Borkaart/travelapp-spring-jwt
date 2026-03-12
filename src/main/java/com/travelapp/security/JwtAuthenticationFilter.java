@@ -6,6 +6,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,6 +25,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
 
@@ -31,12 +35,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         String method = request.getMethod();
 
-        return HttpMethod.OPTIONS.matches(method)
+        boolean shouldSkip = HttpMethod.OPTIONS.matches(method)
                 || path.startsWith("/api/auth")
                 || (path.equals("/api/users") && HttpMethod.POST.matches(method))
                 || path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs")
                 || path.equals("/swagger-ui.html");
+        
+        if (shouldSkip) {
+            logger.debug("Skipping JWT filter for path: {}", path);
+        }
+        return shouldSkip;
     }
 
     @Override
@@ -50,6 +59,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // Se nao vier Bearer, eu deixo seguir sem autenticar e o SecurityChain decide 401/403 depois.
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            logger.debug("No Bearer token found in request to {}", request.getServletPath());
             filterChain.doFilter(request, response);
             return;
         }
@@ -58,6 +68,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             final String username = jwtService.extractUsername(jwt);
+            logger.debug("JWT extracted username: {}", username);
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
@@ -72,7 +83,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                    logger.debug("User authenticated via JWT: {}", username);
                 } else {
+                    logger.warn("Invalid token for user: {}", username);
                     writeError(response, HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired JWT");
                     return;
 
@@ -80,6 +93,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
         } catch (JwtException | IllegalArgumentException e) {
+            logger.error("JWT Error: {}", e.getMessage());
             writeError(response, HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT");
             return;
         }

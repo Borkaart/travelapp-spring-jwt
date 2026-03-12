@@ -13,6 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,30 +23,38 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
 
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/login")
     public AuthResponse login(@RequestBody @Valid LoginRequest request) {
+        logger.debug("Attempting login for user: {}", request.getEmail());
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getEmail(),
+                            request.getPassword()
+                    )
+            );
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
-        );
+            User user = (User) authentication.getPrincipal();
+            logger.debug("Login successful for user: {}", user.getEmail());
 
-        User user = (User) authentication.getPrincipal();
+            String accessToken = jwtService.generateToken(user);
+            String refreshToken = refreshTokenService.createForLogin(user);
 
-        String accessToken = jwtService.generateToken(user);
-        String refreshToken = refreshTokenService.createForLogin(user);
-
-        return AuthResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .expiresIn(jwtService.getJwtExpirationSeconds())
-                .build();
+            return AuthResponse.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .expiresIn(jwtService.getJwtExpirationSeconds())
+                    .build();
+        } catch (AuthenticationException e) {
+            logger.error("Login failed for user: {}. Reason: {}", request.getEmail(), e.getMessage());
+            throw e;
+        }
     }
 
     @PostMapping("/refresh")

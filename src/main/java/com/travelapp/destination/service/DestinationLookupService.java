@@ -3,6 +3,8 @@ package com.travelapp.destination.service;
 import com.travelapp.destination.dto.DestinationCityResponse;
 import com.travelapp.destination.dto.DestinationCountryResponse;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -21,6 +23,8 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class DestinationLookupService {
 
+    private static final Logger logger = LoggerFactory.getLogger(DestinationLookupService.class);
+
     private static final int DEFAULT_LIMIT = 10;
     private static final String REST_COUNTRIES_BASE_URL = "https://restcountries.com";
 
@@ -28,6 +32,7 @@ public class DestinationLookupService {
 
     public List<DestinationCountryResponse> searchCountries(String query) {
         try {
+            logger.debug("Searching for countries with query: {}", query);
             RestCountriesCountryResponse[] countries = RestClient.builder()
                     .baseUrl(REST_COUNTRIES_BASE_URL)
                     .build()
@@ -40,6 +45,7 @@ public class DestinationLookupService {
                     .body(RestCountriesCountryResponse[].class);
 
             if (countries == null) {
+                logger.warn("RestCountries API returned null response");
                 return Collections.emptyList();
             }
 
@@ -56,25 +62,30 @@ public class DestinationLookupService {
                             .build())
                     .sorted(Comparator.comparing(DestinationCountryResponse::getName, String.CASE_INSENSITIVE_ORDER))
                     .toList();
-        } catch (RuntimeException ex) {
+        } catch (Exception ex) {
+            logger.error("Error searching countries", ex);
             return Collections.emptyList();
         }
     }
 
     public List<DestinationCityResponse> searchCities(String countryCode, String query) {
         if (!amadeusClientService.isConfigured()) {
+            logger.warn("Amadeus service is not configured properly");
             return Collections.emptyList();
         }
         if (!StringUtils.hasText(query)) {
+            logger.debug("Query is empty, returning empty list for city search");
             return Collections.emptyList();
         }
 
         String token = amadeusClientService.fetchAccessToken();
         if (!StringUtils.hasText(token)) {
+            logger.error("Failed to obtain access token for city search");
             return Collections.emptyList();
         }
 
         try {
+            logger.debug("Searching cities with query: '{}' and countryCode: '{}'", query, countryCode);
             AmadeusLocationResponse response = amadeusClientService.restClient().get()
                     .uri(uriBuilder -> uriBuilder
                             .path("/v1/reference-data/locations")
@@ -87,10 +98,11 @@ public class DestinationLookupService {
                     .body(AmadeusLocationResponse.class);
 
             if (response == null || response.data() == null) {
+                logger.warn("Amadeus API returned null response for city search");
                 return Collections.emptyList();
             }
 
-            return response.data().stream()
+            List<DestinationCityResponse> results = response.data().stream()
                     .filter(Objects::nonNull)
                     .filter(loc -> loc.address() != null)
                     // Filter by country code if provided and matches
@@ -98,7 +110,11 @@ public class DestinationLookupService {
                             || (loc.address().countryCode() != null && loc.address().countryCode().equalsIgnoreCase(countryCode.trim())))
                     .map(this::toCityResponse)
                     .toList();
-        } catch (RuntimeException ex) {
+            
+            logger.debug("Found {} cities for query '{}'", results.size(), query);
+            return results;
+        } catch (Exception ex) {
+            logger.error("Error searching cities", ex);
             return Collections.emptyList();
         }
     }
@@ -110,10 +126,12 @@ public class DestinationLookupService {
 
         String token = amadeusClientService.fetchAccessToken();
         if (!StringUtils.hasText(token)) {
+            logger.error("Failed to obtain access token for coordinates search");
             return null;
         }
 
         try {
+            logger.debug("Finding coordinates for city: '{}', country: '{}'", cityName, countryName);
             // Search for the city
             AmadeusLocationResponse response = amadeusClientService.restClient().get()
                     .uri(uriBuilder -> uriBuilder
@@ -126,6 +144,7 @@ public class DestinationLookupService {
                     .body(AmadeusLocationResponse.class);
 
             if (response == null || response.data() == null || response.data().isEmpty()) {
+                logger.warn("No coordinates found for city: {}", cityName);
                 return null;
             }
 
@@ -139,7 +158,8 @@ public class DestinationLookupService {
                     .map(loc -> new GeoPoint(loc.geoCode().latitude(), loc.geoCode().longitude()))
                     .orElse(null);
             
-        } catch (RuntimeException ex) {
+        } catch (Exception ex) {
+            logger.error("Error finding city coordinates", ex);
             return null;
         }
     }
