@@ -19,13 +19,12 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
-@EnableConfigurationProperties(GeoapifyProperties.class)
 public class DestinationLookupService {
 
     private static final int DEFAULT_LIMIT = 10;
     private static final String REST_COUNTRIES_BASE_URL = "https://restcountries.com";
 
-    private final GeoapifyProperties geoapifyProperties;
+    private final AmadeusClientService amadeusClientService;
 
     public List<DestinationCountryResponse> searchCountries(String query) {
         try {
@@ -63,71 +62,97 @@ public class DestinationLookupService {
     }
 
     public List<DestinationCityResponse> searchCities(String countryCode, String query) {
-        if (!geoapifyProperties.enabled() || !StringUtils.hasText(geoapifyProperties.apiKey())) {
+        if (!amadeusClientService.isConfigured()) {
             return Collections.emptyList();
         }
-        if (!StringUtils.hasText(countryCode) || !StringUtils.hasText(query)) {
+        if (!StringUtils.hasText(query)) {
+            return Collections.emptyList();
+        }
+
+        String token = amadeusClientService.fetchAccessToken();
+        if (!StringUtils.hasText(token)) {
             return Collections.emptyList();
         }
 
         try {
-            GeoapifyFeatureCollection response = RestClient.builder()
-                    .baseUrl(resolveGeoapifyBaseUrl())
-                    .build()
-                    .get()
+            AmadeusLocationResponse response = amadeusClientService.restClient().get()
                     .uri(uriBuilder -> uriBuilder
-                            .path("/v1/geocode/autocomplete")
-                            .queryParam("text", query.trim())
-                            .queryParam("type", "city")
-                            .queryParam("filter", "countrycode:" + countryCode.trim().toLowerCase(Locale.ROOT))
-                            .queryParam("limit", DEFAULT_LIMIT)
-                            .queryParam("apiKey", geoapifyProperties.apiKey().trim())
+                            .path("/v1/reference-data/locations")
+                            .queryParam("subType", "CITY")
+                            .queryParam("keyword", query.trim())
+                            .queryParam("view", "LIGHT")
                             .build())
+                    .header("Authorization", "Bearer " + token)
                     .retrieve()
-                    .body(GeoapifyFeatureCollection.class);
+                    .body(AmadeusLocationResponse.class);
 
-            if (response == null || response.features() == null) {
+            if (response == null || response.data() == null) {
                 return Collections.emptyList();
             }
 
-            return response.features().stream()
-                    .map(GeoapifyFeature::properties)
+            return response.data().stream()
                     .filter(Objects::nonNull)
-                    .filter(properties -> StringUtils.hasText(properties.city()) || StringUtils.hasText(properties.name()))
-                    .collect(
-                            LinkedHashMap<String, DestinationCityResponse>::new,
-                            (cities, properties) -> {
-                                DestinationCityResponse city = toCityResponse(properties);
-                                cities.putIfAbsent(buildCityKey(city), city);
-                            },
-                            Map::putAll
-                    )
-                    .values()
-                    .stream()
+                    .filter(loc -> loc.address() != null)
+                    // Filter by country code if provided and matches
+                    .filter(loc -> !StringUtils.hasText(countryCode) 
+                            || (loc.address().countryCode() != null && loc.address().countryCode().equalsIgnoreCase(countryCode.trim())))
+                    .map(this::toCityResponse)
                     .toList();
         } catch (RuntimeException ex) {
             return Collections.emptyList();
         }
     }
 
-    private DestinationCityResponse toCityResponse(GeoapifyFeatureProperties properties) {
-        String cityName = StringUtils.hasText(properties.city()) ? properties.city() : properties.name();
+    public GeoPoint findCityCoordinates(String cityName, String countryName) {
+         if (!amadeusClientService.isConfigured() || !StringUtils.hasText(cityName)) {
+            return null;
+        }
 
-        return DestinationCityResponse.builder()
-                .name(cityName)
-                .country(properties.country())
-                .countryCode(properties.countryCode())
-                .formatted(properties.formatted())
-                .lat(properties.lat())
-                .lon(properties.lon())
-                .build();
+        String token = amadeusClientService.fetchAccessToken();
+        if (!StringUtils.hasText(token)) {
+            return null;
+        }
+
+        try {
+            // Search for the city
+            AmadeusLocationResponse response = amadeusClientService.restClient().get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/v1/reference-data/locations")
+                            .queryParam("subType", "CITY")
+                            .queryParam("keyword", cityName.trim())
+                            .build())
+                    .header("Authorization", "Bearer " + token)
+                    .retrieve()
+                    .body(AmadeusLocationResponse.class);
+
+            if (response == null || response.data() == null || response.data().isEmpty()) {
+                return null;
+            }
+
+            // Find the best match (optionally filtering by countryName if possible, but keyword search is usually enough for coordinates)
+            // Here we try to match country name if provided to be more precise
+            return response.data().stream()
+                    .filter(loc -> loc.geoCode() != null)
+                    .filter(loc -> !StringUtils.hasText(countryName) 
+                            || (loc.address() != null && loc.address().countryName() != null && loc.address().countryName().equalsIgnoreCase(countryName.trim())))
+                    .findFirst()
+                    .map(loc -> new GeoPoint(loc.geoCode().latitude(), loc.geoCode().longitude()))
+                    .orElse(null);
+            
+        } catch (RuntimeException ex) {
+            return null;
+        }
     }
 
-    private String resolveGeoapifyBaseUrl() {
-        if (StringUtils.hasText(geoapifyProperties.baseUrl())) {
-            return geoapifyProperties.baseUrl().trim();
-        }
-        return "https://api.geoapify.com";
+    private DestinationCityResponse toCityResponse(AmadeusLocation location) {
+        return DestinationCityResponse.builder()
+                .name(location.name())
+                .country(location.address().countryName())
+                .countryCode(location.address().countryCode())
+                .formatted(location.name() + ", " + location.address().countryName())
+                .lat(location.geoCode() != null ? location.geoCode().latitude() : null)
+                .lon(location.geoCode() != null ? location.geoCode().longitude() : null)
+                .build();
     }
 
     private String buildCityKey(DestinationCityResponse city) {

@@ -14,44 +14,49 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
-@EnableConfigurationProperties(GeoapifyProperties.class)
 public class DestinationPlaceService {
 
-    private static final String DEFAULT_CATEGORIES = "tourism.sights,tourism.attraction";
-    private static final int DEFAULT_RADIUS_METERS = 10000;
+    private static final int DEFAULT_RADIUS_KM = 10;
     private static final int DEFAULT_LIMIT = 12;
 
-    private final GeoapifyProperties geoapifyProperties;
+    private final AmadeusClientService amadeusClientService;
+    private final DestinationLookupService destinationLookupService;
 
     public List<DestinationPlaceResponse> getPlaces(Destination destination) {
-        if (!geoapifyProperties.enabled() || !StringUtils.hasText(geoapifyProperties.apiKey())) {
+        if (!amadeusClientService.isConfigured()) {
             return Collections.emptyList();
         }
 
-        GeoPoint geoPoint = geocodeDestination(destination);
+        GeoPoint geoPoint = destinationLookupService.findCityCoordinates(destination.getName(), destination.getCountry());
         if (geoPoint == null) {
             return Collections.emptyList();
         }
 
-        try {
-            GeoapifyFeatureCollection response = restClient().get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/v2/places")
-                            .queryParam("categories", DEFAULT_CATEGORIES)
-                            .queryParam("filter", "circle:" + geoPoint.lon() + "," + geoPoint.lat() + "," + DEFAULT_RADIUS_METERS)
-                            .queryParam("bias", "proximity:" + geoPoint.lon() + "," + geoPoint.lat())
-                            .queryParam("limit", DEFAULT_LIMIT)
-                            .queryParam("apiKey", geoapifyProperties.apiKey().trim())
-                            .build())
-                    .retrieve()
-                    .body(GeoapifyFeatureCollection.class);
+        String token = amadeusClientService.fetchAccessToken();
+        if (!StringUtils.hasText(token)) {
+            return Collections.emptyList();
+        }
 
-            if (response == null || response.features() == null) {
+        try {
+            AmadeusLocationResponse response = amadeusClientService.restClient().get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/v1/reference-data/locations/pois")
+                            .queryParam("latitude", geoPoint.lat())
+                            .queryParam("longitude", geoPoint.lon())
+                            .queryParam("radius", DEFAULT_RADIUS_KM)
+                            .queryParam("page[limit]", DEFAULT_LIMIT)
+                            .queryParam("categories", "SIGHTS,HISTORICAL,BEACH_PARK,NIGHTLIFE")
+                            .build())
+                    .header("Authorization", "Bearer " + token)
+                    .retrieve()
+                    .body(AmadeusLocationResponse.class);
+
+            if (response == null || response.data() == null) {
                 return Collections.emptyList();
             }
 
-            return response.features().stream()
-                    .map(feature -> toPlaceResponse(feature.properties()))
+            return response.data().stream()
+                    .map(this::toPlaceResponse)
                     .filter(Objects::nonNull)
                     .toList();
         } catch (RuntimeException ex) {
@@ -59,114 +64,19 @@ public class DestinationPlaceService {
         }
     }
 
-    private GeoPoint geocodeDestination(Destination destination) {
-        try {
-            GeoapifyFeatureCollection response = restClient().get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/v1/geocode/search")
-                            .queryParam("text", destination.getName() + ", " + destination.getCountry())
-                            .queryParam("limit", 1)
-                            .queryParam("apiKey", geoapifyProperties.apiKey().trim())
-                            .build())
-                    .retrieve()
-                    .body(GeoapifyFeatureCollection.class);
-
-            if (response == null || response.features() == null || response.features().isEmpty()) {
-                return null;
-            }
-
-            GeoapifyFeatureProperties properties = response.features().get(0).properties();
-            if (properties == null || properties.lat() == null || properties.lon() == null) {
-                return null;
-            }
-
-            return new GeoPoint(properties.lat(), properties.lon());
-        } catch (RuntimeException ex) {
+    private DestinationPlaceResponse toPlaceResponse(AmadeusLocation location) {
+        if (location == null) {
             return null;
         }
-    }
-
-    private DestinationPlaceResponse toPlaceResponse(GeoapifyFeatureProperties properties) {
-        if (properties == null) {
-            return null;
-        }
-
-        GeoapifyPlaceDetailProperties details = fetchPlaceDetails(properties.placeId());
 
         return DestinationPlaceResponse.builder()
-                .name(resolveName(properties))
-                .category(resolveCategory(properties))
-                .formatted(properties.formatted())
-                .website(details != null ? details.website() : null)
-                .imageUrl(resolveImageUrl(details))
-                .lat(properties.lat())
-                .lon(properties.lon())
+                .name(location.name())
+                .category(location.category())
+                .formatted(location.name()) // Amadeus POI often doesn't have a formatted address like Geoapify
+                .website(null) // Amadeus POI doesn't typically return website in the basic response
+                .imageUrl(null) // Amadeus POI doesn't return images usually
+                .lat(location.geoCode() != null ? location.geoCode().latitude() : null)
+                .lon(location.geoCode() != null ? location.geoCode().longitude() : null)
                 .build();
-    }
-
-    private String resolveName(GeoapifyFeatureProperties properties) {
-        if (StringUtils.hasText(properties.name())) {
-            return properties.name();
-        }
-        if (StringUtils.hasText(properties.formatted())) {
-            return properties.formatted();
-        }
-        return "Ponto de interesse";
-    }
-
-    private String resolveCategory(GeoapifyFeatureProperties properties) {
-        if (properties.categories() == null || properties.categories().isEmpty()) {
-            return null;
-        }
-        return properties.categories().stream()
-                .filter(StringUtils::hasText)
-                .findFirst()
-                .orElse(null);
-    }
-
-    private GeoapifyPlaceDetailProperties fetchPlaceDetails(String placeId) {
-        if (!StringUtils.hasText(placeId)) {
-            return null;
-        }
-
-        try {
-            GeoapifyPlaceDetailsResponse response = restClient().get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/v2/place-details")
-                            .queryParam("id", placeId)
-                            .queryParam("features", "details")
-                            .queryParam("apiKey", geoapifyProperties.apiKey().trim())
-                            .build())
-                    .retrieve()
-                    .body(GeoapifyPlaceDetailsResponse.class);
-
-            if (response == null || response.features() == null || response.features().isEmpty()) {
-                return null;
-            }
-
-            return response.features().get(0).properties();
-        } catch (RuntimeException ex) {
-            return null;
-        }
-    }
-
-    private String resolveImageUrl(GeoapifyPlaceDetailProperties details) {
-        if (details == null || details.wikiAndMedia() == null) {
-            return null;
-        }
-        return details.wikiAndMedia().image();
-    }
-
-    private RestClient restClient() {
-        return RestClient.builder()
-                .baseUrl(resolveBaseUrl())
-                .build();
-    }
-
-    private String resolveBaseUrl() {
-        if (StringUtils.hasText(geoapifyProperties.baseUrl())) {
-            return geoapifyProperties.baseUrl().trim();
-        }
-        return "https://api.geoapify.com";
     }
 }

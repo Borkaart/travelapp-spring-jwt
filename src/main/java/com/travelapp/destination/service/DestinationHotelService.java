@@ -14,20 +14,20 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
-@EnableConfigurationProperties({AmadeusProperties.class, GeoapifyProperties.class})
+@EnableConfigurationProperties(AmadeusProperties.class)
 public class DestinationHotelService {
 
     private static final int DEFAULT_RADIUS_KM = 8;
 
     private final AmadeusClientService amadeusClientService;
-    private final GeoapifyProperties geoapifyProperties;
+    private final DestinationLookupService destinationLookupService;
 
     public List<DestinationHotelResponse> getHotels(Destination destination) {
         if (!amadeusClientService.isConfigured()) {
             return Collections.emptyList();
         }
 
-        GeoPoint geoPoint = geocodeDestination(destination);
+        GeoPoint geoPoint = destinationLookupService.findCityCoordinates(destination.getName(), destination.getCountry());
         if (geoPoint == null) {
             return Collections.emptyList();
         }
@@ -77,47 +77,6 @@ public class DestinationHotelService {
                 .distanceUnit(hotel.distance() != null ? hotel.distance().unit() : null)
                 .rating(hotel.rating())
                 .build();
-    }
-
-    private GeoPoint geocodeDestination(Destination destination) {
-        if (!StringUtils.hasText(geoapifyProperties.apiKey())) {
-            return null;
-        }
-
-        try {
-            GeoapifyFeatureCollection response = RestClient.builder()
-                    .baseUrl(resolveGeoapifyBaseUrl())
-                    .build()
-                    .get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/v1/geocode/search")
-                            .queryParam("text", destination.getName() + ", " + destination.getCountry())
-                            .queryParam("limit", 1)
-                            .queryParam("apiKey", geoapifyProperties.apiKey().trim())
-                            .build())
-                    .retrieve()
-                    .body(GeoapifyFeatureCollection.class);
-
-            if (response == null || response.features() == null || response.features().isEmpty()) {
-                return null;
-            }
-
-            GeoapifyFeatureProperties properties = response.features().get(0).properties();
-            if (properties == null || properties.lat() == null || properties.lon() == null) {
-                return null;
-            }
-
-            return new GeoPoint(properties.lat(), properties.lon());
-        } catch (RuntimeException ex) {
-            return null;
-        }
-    }
-
-    private String resolveGeoapifyBaseUrl() {
-        if (StringUtils.hasText(geoapifyProperties.baseUrl())) {
-            return geoapifyProperties.baseUrl().trim();
-        }
-        return "https://api.geoapify.com";
     }
 
     private String joinAddress(AmadeusHotelData.AmadeusAddress address) {
