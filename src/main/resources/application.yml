@@ -2,6 +2,12 @@ spring:
   config:
     import: optional:file:.env[.properties]
 
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:travelapp}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -12,7 +18,7 @@ spring:
         format_sql: true
 
 server:
-  port: ${PORT:${SERVER_PORT:8080}}
+  port: ${PORT:8080}
 
 jwt:
   secret: ${JWT_SECRET:WPvHbw1zGN9Rs8BZtup4igI5CTqrKAFLhdQJMl2xUVEfX6noSY37Ome0Dkaycj}
