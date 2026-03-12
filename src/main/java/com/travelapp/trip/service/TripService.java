@@ -10,7 +10,6 @@ import com.travelapp.trip.domain.TripStatus;
 import com.travelapp.trip.dto.TripCreateRequest;
 import com.travelapp.trip.dto.TripResponse;
 import com.travelapp.trip.repository.TripRepository;
-import com.travelapp.trip.service.TripAccessService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;

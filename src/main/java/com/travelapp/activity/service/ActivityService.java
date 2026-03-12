@@ -12,7 +12,6 @@ import com.travelapp.itinerary.domain.ItineraryDay;
 import com.travelapp.itinerary.repository.ItineraryDayRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -106,9 +105,6 @@ public class ActivityService {
         Activity activity = activityRepository.findOwnedById(activityId, user.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
 
-        // A query ja garante ownership; deixei o assert comentado como lembrete de redundancia.
-        // assertTripOwner(activity.getItineraryDay().getTrip().getOwner().getId(), user);
-
         validateCost(request.getCost());
 
         // Aqui eu atualizo so os campos que vieram na requisicao (estilo PATCH).
@@ -129,12 +125,6 @@ public class ActivityService {
                 .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
 
         activityRepository.delete(activity);
-    }
-
-    private void assertTripOwner(Long ownerId, User user) {
-        if (!ownerId.equals(user.getId())) {
-            throw new AccessDeniedException("Not your trip");
-        }
     }
 
     private void validateCost(java.math.BigDecimal cost) {

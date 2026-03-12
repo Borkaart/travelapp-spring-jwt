@@ -37,11 +37,23 @@ public class AuthController {
         User user = (User) authentication.getPrincipal();
 
         String accessToken = jwtService.generateToken(user);
-        String refreshToken = refreshTokenService.createForLogin(user).getToken();
+        String refreshToken = refreshTokenService.createForLogin(user);
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .expiresIn(jwtService.getJwtExpirationSeconds())
+                .build();
+    }
+
+    @PostMapping("/refresh")
+    public AuthResponse refresh(@RequestBody @Valid RefreshRequest request) {
+        var result = refreshTokenService.rotate(request.refreshToken());
+        String accessToken = jwtService.generateToken(result.user());
+
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(result.refreshToken())
                 .expiresIn(jwtService.getJwtExpirationSeconds())
                 .build();
     }

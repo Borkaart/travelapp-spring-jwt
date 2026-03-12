@@ -9,22 +9,17 @@ import com.travelapp.trip.service.TripService;
 import com.travelapp.trip.service.TripSummaryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Set;
-
 @RestController
 @RequestMapping("/api/trips")
 @RequiredArgsConstructor
 public class TripController {
-
-    private static final Set<String> ALLOWED_SORTS = Set.of(
-            "id", "name", "startDate", "endDate", "createdAt"
-    );
 
     private final TripService tripService;
     private final TripSummaryService tripSummaryService;
@@ -44,8 +39,7 @@ public class TripController {
             @AuthenticationPrincipal User user,
             @PageableDefault(size = 20) Pageable pageable
     ) {
-        Pageable safePageable = sanitizePageable(pageable);
-        return tripService.listMyTrips(user, safePageable);
+        return tripService.listMyTrips(user, pageable);
     }
 
     @GetMapping("/{tripId}")
@@ -55,25 +49,6 @@ public class TripController {
             @AuthenticationPrincipal User user
     ) {
         return tripService.getById(tripId, user);
-    }
-
-    private Pageable sanitizePageable(Pageable pageable) {
-        Sort safeSort = Sort.unsorted();
-
-        if (pageable.getSort() != null && pageable.getSort().isSorted()) {
-            Sort result = Sort.unsorted();
-            for (Sort.Order order : pageable.getSort()) {
-                String prop = order.getProperty();
-                if (ALLOWED_SORTS.contains(prop)) {
-                    result = result.and(Sort.by(new Sort.Order(order.getDirection(), prop)));
-                }
-            }
-            safeSort = result.isSorted() ? result : Sort.by(Sort.Order.desc("id"));
-        } else {
-            safeSort = Sort.by(Sort.Order.desc("id"));
-        }
-
-        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), safeSort);
     }
 
     @GetMapping("/{tripId}/summary")

@@ -45,7 +45,7 @@ public class BudgetService {
 
     @Transactional(readOnly = true)
     public BudgetResponse getByTrip(Long tripId, User user) {
-        Trip trip = tripAccessService.getOwnedTrip(tripId, user);
+        tripAccessService.getOwnedTrip(tripId, user);
 
         Budget budget = budgetRepository.findByTripId(tripId)
                 .orElseThrow(() -> new EntityNotFoundException("Budget not found"));
@@ -55,7 +55,7 @@ public class BudgetService {
 
     @Transactional(readOnly = true)
     public BudgetStatusResponse status(Long tripId, User user) {
-        Trip trip = tripAccessService.getOwnedTrip(tripId, user);
+        tripAccessService.getOwnedTrip(tripId, user);
 
         Budget budget = budgetRepository.findByTripId(tripId)
                 .orElseThrow(() -> new EntityNotFoundException("Budget not found"));

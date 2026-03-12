@@ -18,8 +18,8 @@ public class RefreshToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private String token;
+    @Column(name = "token_hash", nullable = true, unique = true, length = 64)
+    private String tokenHash;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

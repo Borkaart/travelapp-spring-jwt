@@ -6,6 +6,7 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+    open-in-view: true
     properties:
       hibernate:
         format_sql: true
@@ -16,6 +17,7 @@ server:
 jwt:
   secret: ${JWT_SECRET:WPvHbw1zGN9Rs8BZtup4igI5CTqrKAFLhdQJMl2xUVEfX6noSY37Ome0Dkaycj}
   expiration: ${JWT_EXPIRATION:14400000}
+  refresh-expiration-days: ${JWT_REFRESH_EXPIRATION_DAYS:7}
 
 app:
   cors:
@@ -36,3 +38,29 @@ amadeus:
   client-id: ${AMADEUS_CLIENT_ID:}
   client-secret: ${AMADEUS_CLIENT_SECRET:}
   base-url: ${AMADEUS_BASE_URL:https://test.api.amadeus.com}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:14400000}
+  refresh-expiration-days: ${JWT_REFRESH_EXPIRATION_DAYS:7}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

@@ -9,7 +9,6 @@ import com.travelapp.itinerary.dto.ItineraryDayResponse;
 import com.travelapp.itinerary.repository.ItineraryDayRepository;
 import com.travelapp.trip.domain.Trip;
 import com.travelapp.trip.service.TripAccessService;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

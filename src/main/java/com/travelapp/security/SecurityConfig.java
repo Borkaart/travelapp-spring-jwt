@@ -37,10 +37,9 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider(PasswordEncoder passwordEncoder) {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(passwordEncoder);
         provider.setUserDetailsService(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder);
-        provider.setHideUserNotFoundExceptions(false);
+        provider.setHideUserNotFoundExceptions(true);
         return provider;
     }
 

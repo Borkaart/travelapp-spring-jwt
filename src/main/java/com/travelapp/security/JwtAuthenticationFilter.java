@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -71,19 +73,59 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 } else {
-                    // Se o token vier invalido, eu retorno 401 direto para nao virar 403 confuso.
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired JWT");
+                    writeError(response, HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired JWT");
                     return;
 
                 }
             }
 
         } catch (JwtException | IllegalArgumentException e) {
-            // Se o token vier malformado ou com assinatura errada, eu retorno 401 direto.
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT");
+            writeError(response, HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT");
             return;
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void writeError(HttpServletResponse response, int status, String message) throws IOException {
+        if (response.isCommitted()) return;
+
+        response.resetBuffer();
+        response.setStatus(status);
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json");
+
+        String reason = status == 401 ? "Unauthorized" : "Error";
+
+        Map<String, Object> body = Map.of(
+                "timestamp", Instant.now(),
+                "status", status,
+                "error", reason,
+                "message", message
+        );
+
+        response.getWriter().write(toJson(body));
+        response.flushBuffer();
+    }
+
+    private String toJson(Map<String, Object> body) {
+        String timestamp = String.valueOf(body.get("timestamp"));
+        String status = String.valueOf(body.get("status"));
+        String error = String.valueOf(body.get("error"));
+        String message = String.valueOf(body.get("message"));
+
+        return """
+                {
+                  "timestamp": "%s",
+                  "status": %s,
+                  "error": "%s",
+                  "message": "%s"
+                }
+                """.formatted(escapeJson(timestamp), status, escapeJson(error), escapeJson(message));
+    }
+
+    private String escapeJson(String value) {
+        if (value == null) return "";
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }

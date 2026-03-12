@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
@@ -23,16 +25,18 @@ public class RefreshTokenService {
     private long refreshExpirationDays;
 
     @Transactional
-    public RefreshToken createForLogin(User user) {
+    public String createForLogin(User user) {
         // Quando o usuario loga, eu removo os tokens antigos para manter o fluxo simples e seguro.
         refreshTokenRepository.deleteByUser(user);
 
-        return refreshTokenRepository.save(buildToken(user));
+        String rawToken = newRawToken();
+        refreshTokenRepository.save(buildToken(user, rawToken));
+        return rawToken;
     }
 
     @Transactional
-    public RefreshToken rotate(String oldToken) {
-        RefreshToken existing = refreshTokenRepository.findByToken(oldToken)
+    public RotationResult rotate(String oldToken) {
+        RefreshToken existing = refreshTokenRepository.findByTokenHash(hash(oldToken))
                 .orElseThrow(() -> new InvalidRefreshTokenException("Refresh token not found"));
 
         if (existing.isRevoked()) {
@@ -48,25 +52,58 @@ public class RefreshTokenService {
         refreshTokenRepository.save(existing);
 
         // Depois eu emito um novo refresh token para o mesmo usuario.
-        RefreshToken newToken = buildToken(existing.getUser());
-        return refreshTokenRepository.save(newToken);
+        String newRawToken = newRawToken();
+        RefreshToken newToken = buildToken(existing.getUser(), newRawToken);
+        refreshTokenRepository.save(newToken);
+        return new RotationResult(existing.getUser(), newRawToken);
     }
 
     @Transactional
     public void revoke(String token) {
-        RefreshToken existing = refreshTokenRepository.findByToken(token)
+        RefreshToken existing = refreshTokenRepository.findByTokenHash(hash(token))
                 .orElseThrow(() -> new InvalidRefreshTokenException("Refresh token not found"));
 
         existing.setRevoked(true);
         refreshTokenRepository.save(existing);
     }
 
-    private RefreshToken buildToken(User user) {
+    public record RotationResult(User user, String refreshToken) {}
+
+    private RefreshToken buildToken(User user, String rawToken) {
         return RefreshToken.builder()
-                .token(UUID.randomUUID().toString())
+                .tokenHash(hash(rawToken))
                 .user(user)
                 .revoked(false)
                 .expiresAt(Instant.now().plus(refreshExpirationDays, ChronoUnit.DAYS))
                 .build();
+    }
+
+    private String newRawToken() {
+        return UUID.randomUUID().toString();
+    }
+
+    private String hash(String rawToken) {
+        if (rawToken == null || rawToken.isBlank()) {
+            throw new InvalidRefreshTokenException("Refresh token invalid");
+        }
+
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashed = digest.digest(rawToken.trim().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return toHex(hashed);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 not available", e);
+        }
+    }
+
+    private String toHex(byte[] bytes) {
+        char[] out = new char[bytes.length * 2];
+        final char[] hex = "0123456789abcdef".toCharArray();
+        for (int i = 0; i < bytes.length; i++) {
+            int v = bytes[i] & 0xFF;
+            out[i * 2] = hex[v >>> 4];
+            out[i * 2 + 1] = hex[v & 0x0F];
+        }
+        return new String(out);
     }
 }
