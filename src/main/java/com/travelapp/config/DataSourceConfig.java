@@ -13,10 +13,9 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.net.URI;
-import java.net.URISyntaxException;
+import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.context.annotation.Primary;
+import javax.sql.DataSource;
 
 @Configuration
 public class DataSourceConfig {
@@ -33,14 +32,16 @@ public class DataSourceConfig {
     }
 
     @Bean
-    public DataSourceProperties dataSourceProperties() {
-        DataSourceProperties properties = new DataSourceProperties();
+    @Primary
+    public DataSource dataSource() {
+        String finalUrl;
+        String username;
+        String password;
 
         if (databaseUrl != null && !databaseUrl.isEmpty()) {
             try {
-                logger.info("DATABASE_URL found. Extracting credentials for JDBC...");
+                logger.info("Configuring PRIMARY DataSource from DATABASE_URL");
                 
-                // Converte postgres:// para postgresql:// para o URI parser
                 String cleanUrl = databaseUrl.trim();
                 if (cleanUrl.startsWith("postgres://")) {
                     cleanUrl = cleanUrl.replaceFirst("postgres://", "postgresql://");
@@ -48,53 +49,55 @@ public class DataSourceConfig {
                 
                 URI dbUri = new URI(cleanUrl);
                 
-                // Extrai as partes
+                username = "";
+                password = "";
                 String userInfo = dbUri.getUserInfo();
                 if (userInfo != null && userInfo.contains(":")) {
-                    String username = userInfo.split(":")[0];
-                    String password = userInfo.split(":")[1];
-                    properties.setUsername(username);
-                    properties.setPassword(password);
+                    username = userInfo.split(":")[0];
+                    password = userInfo.split(":")[1];
                 }
                 
-                // Monta a URL JDBC sem as credenciais no meio (o driver exige assim)
-                String jdbcUrl = String.format("jdbc:postgresql://%s:%d%s", 
+                finalUrl = String.format("jdbc:postgresql://%s:%d%s", 
                         dbUri.getHost(), dbUri.getPort(), dbUri.getPath());
                 
-                properties.setUrl(jdbcUrl);
-                logger.info("JDBC Connection configured: {}", jdbcUrl);
+                logger.info("JDBC URL constructed successfully: {}", finalUrl);
                 
             } catch (URISyntaxException | ArrayIndexOutOfBoundsException e) {
-                logger.error("Failed to parse DATABASE_URL: {}. Falling back.", e.getMessage());
-                applyFallback(properties);
+                logger.error("Critical error parsing DATABASE_URL: {}. Falling back to component variables.", e.getMessage());
+                return buildFromComponents();
             }
         } else {
-            logger.info("DATABASE_URL not found. Using application.yml or defaults.");
-            applyFallback(properties);
+            logger.info("DATABASE_URL not found. Using component variables (DB_HOST, etc).");
+            return buildFromComponents();
         }
 
-        return properties;
+        return buildDataSource(finalUrl, username, password);
     }
 
-    private void applyFallback(DataSourceProperties properties) {
-        String yamlUrl = environment.getProperty("spring.datasource.url");
-        if (yamlUrl != null) {
-            properties.setUrl(yamlUrl);
-            properties.setUsername(environment.getProperty("spring.datasource.username"));
-            properties.setPassword(environment.getProperty("spring.datasource.password"));
-        } else {
-            if (environment.matchesProfiles("prod")) {
-                logger.warn("Running in PROD but no database configuration found!");
-            }
-            properties.setUrl("jdbc:postgresql://localhost:5432/travelapp");
-            properties.setUsername("postgres");
-            properties.setPassword("postgres");
+    private DataSource buildFromComponents() {
+        String host = environment.getProperty("DB_HOST", "localhost");
+        String port = environment.getProperty("DB_PORT", "5432");
+        String name = environment.getProperty("DB_NAME", "travelapp");
+        String username = environment.getProperty("DB_USER", "postgres");
+        String password = environment.getProperty("DB_PASSWORD", "postgres");
+        
+        String finalUrl = String.format("jdbc:postgresql://%s:%s/%s", host, port, name);
+        
+        if (host.equals("localhost") && environment.matchesProfiles("prod")) {
+            logger.error("CRITICAL: Running in PROD but no database configuration found (DB_HOST is null)!");
         }
+        
+        return buildDataSource(finalUrl, username, password);
     }
 
-    @Bean
-    public DataSource dataSource(DataSourceProperties dataSourceProperties) {
-        return dataSourceProperties.initializeDataSourceBuilder().build();
+    private DataSource buildDataSource(String url, String username, String password) {
+        logger.info("Building DataSource for URL: {}", url);
+        return DataSourceBuilder.create()
+                .url(url)
+                .username(username)
+                .password(password)
+                .driverClassName("org.postgresql.Driver")
+                .build();
     }
 }
 

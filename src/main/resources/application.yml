@@ -1,12 +1,8 @@
 spring:
+  main:
+    allow-bean-definition-overriding: true
   config:
     import: optional:file:.env[.properties]
-
-  datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:travelapp}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:postgres}
-    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
@@ -58,9 +54,11 @@ spring:
       ddl-auto: update
     show-sql: false
     open-in-view: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate:
         format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
 logging:
   level:
