@@ -55,9 +55,17 @@ public class AmadeusClientService {
     }
 
     public boolean isConfigured() {
-        return amadeusProperties.enabled()
+        boolean configured = amadeusProperties.enabled()
                 && StringUtils.hasText(amadeusProperties.clientId())
                 && StringUtils.hasText(amadeusProperties.clientSecret());
+        
+        if (!configured) {
+            logger.warn("Amadeus is NOT configured: enabled={}, clientId={}, clientSecret={}", 
+                amadeusProperties.enabled(), 
+                StringUtils.hasText(amadeusProperties.clientId()), 
+                StringUtils.hasText(amadeusProperties.clientSecret()));
+        }
+        return configured;
     }
 
     private String resolveBaseUrl() {
