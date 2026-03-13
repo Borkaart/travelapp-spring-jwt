@@ -40,7 +40,7 @@ public class SecurityConfig {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
-        provider.setHideUserNotFoundExceptions(true);
+        provider.setHideUserNotFoundExceptions(false); // Mudado para false para ver o erro real (UserNotFound vs BadCredentials)
         return provider;
     }
 
@@ -71,6 +71,7 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/health").permitAll()
+                        .requestMatchers("/error").permitAll() // Permitir para ver o erro real no corpo da resposta
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/api/budgets/**").hasAnyRole("USER","ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/users").permitAll()

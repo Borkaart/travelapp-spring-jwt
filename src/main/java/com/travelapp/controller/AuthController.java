@@ -31,17 +31,18 @@ public class AuthController {
 
     @PostMapping("/login")
     public AuthResponse login(@RequestBody @Valid LoginRequest request) {
-        logger.debug("Attempting login for user: {}", request.getEmail());
+        String email = request.getEmail() != null ? request.getEmail().trim() : "";
+        logger.info("Login attempt - Email: '{}'", email);
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            request.getEmail(),
+                            email,
                             request.getPassword()
                     )
             );
 
             User user = (User) authentication.getPrincipal();
-            logger.debug("Login successful for user: {}", user.getEmail());
+            logger.info("Login successful - User: {}, ID: {}, Role: {}", user.getEmail(), user.getId(), user.getRole());
 
             String accessToken = jwtService.generateToken(user);
             String refreshToken = refreshTokenService.createForLogin(user);
@@ -52,7 +53,11 @@ public class AuthController {
                     .expiresIn(jwtService.getJwtExpirationSeconds())
                     .build();
         } catch (AuthenticationException e) {
-            logger.error("Login failed for user: {}. Reason: {}", request.getEmail(), e.getMessage());
+            logger.error("Login failed - Email: '{}'. Error type: {}, Message: {}", 
+                    email, e.getClass().getSimpleName(), e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.error("Unexpected error during login - Email: '{}'", email, e);
             throw e;
         }
     }
