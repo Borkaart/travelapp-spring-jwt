@@ -77,8 +77,12 @@ public class DestinationController {
 
     @GetMapping("/{id}/places")
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
-    public List<DestinationPlaceResponse> getPlaces(@PathVariable Long id) {
-        return destinationService.getPlaces(id);
+    public List<DestinationPlaceResponse> getPlaces(
+            @PathVariable Long id,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false, defaultValue = "popularity") String sortBy
+    ) {
+        return destinationService.getPlaces(id, category, sortBy);
     }
 
     @GetMapping("/{id}/hotels")

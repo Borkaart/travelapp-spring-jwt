@@ -106,9 +106,9 @@ public class DestinationService {
         return toResponse(destinationRepository.save(destination));
     }
 
-    public List<DestinationPlaceResponse> getPlaces(Long id) {
+    public List<DestinationPlaceResponse> getPlaces(Long id, String categoryGroup, String sortBy) {
         Destination destination = findById(id);
-        return destinationPlaceService.getPlaces(destination);
+        return destinationPlaceService.getPlaces(destination, categoryGroup, sortBy);
     }
 
     public List<DestinationHotelResponse> getHotels(Long id) {
