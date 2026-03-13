@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Map;
 
-@Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
