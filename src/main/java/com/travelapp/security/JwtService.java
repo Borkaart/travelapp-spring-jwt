@@ -26,38 +26,26 @@ public class JwtService {
     private String secret;
 
     private SecretKey getSigningKey() {
-        try {
-            byte[] keyBytes = secret.getBytes();
-            if (keyBytes.length < 32) {
-                logger.warn("JWT Secret is too short ({} bytes). HS256 requires at least 32 bytes. Padding with zeros.", keyBytes.length);
-                byte[] paddedKey = new byte[32];
-                System.arraycopy(keyBytes, 0, paddedKey, 0, Math.min(keyBytes.length, 32));
-                return new javax.crypto.spec.SecretKeySpec(paddedKey, SignatureAlgorithm.HS256.getJcaName());
-            }
-            return new javax.crypto.spec.SecretKeySpec(keyBytes, SignatureAlgorithm.HS256.getJcaName());
-        } catch (Exception e) {
-            logger.error("Error creating signing key: {}", e.getMessage());
-            throw e;
+        byte[] keyBytes = secret.getBytes();
+        if (keyBytes.length < 32) {
+            logger.warn("JWT Secret is too short ({} bytes). HS256 requires at least 32 bytes. Padding with zeros.", keyBytes.length);
+            byte[] paddedKey = new byte[32];
+            System.arraycopy(keyBytes, 0, paddedKey, 0, Math.min(keyBytes.length, 32));
+            return new javax.crypto.spec.SecretKeySpec(paddedKey, SignatureAlgorithm.HS256.getJcaName());
         }
+        return new javax.crypto.spec.SecretKeySpec(keyBytes, SignatureAlgorithm.HS256.getJcaName());
     }
 
     public String generateToken(UserDetails userDetails) {
-        try {
-            logger.info("Generating JWT for user: {}", userDetails.getUsername());
-            User user = (User) userDetails;
+        logger.debug("Generating token for user: {}", userDetails.getUsername());
+        User user = (User) userDetails;
 
-            String token = Jwts.builder()
-                    .setSubject(user.getUsername())
-                    .setIssuedAt(new Date())
-                    .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
-                    .signWith(getSigningKey(), SignatureAlgorithm.HS256)
-                    .compact();
-            logger.info("JWT generated successfully");
-            return token;
-        } catch (Exception e) {
-            logger.error("Error generating JWT: {}", e.getMessage(), e);
-            throw e;
-        }
+        return Jwts.builder()
+                .setSubject(user.getUsername())
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
     }
 
     public String extractUsername(String token) {

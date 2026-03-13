@@ -28,25 +28,15 @@ public class RefreshTokenService {
 
     @Transactional
     public String createForLogin(User user) {
-        try {
-            logger.info("Creating refresh token for login - User: {}", user.getEmail());
-            
-            // Tenta buscar o token existente em vez de apenas deletar, para evitar conflitos de transação
-            refreshTokenRepository.deleteByUserId(user.getId());
-            refreshTokenRepository.flush(); // Garante que a deleção ocorra ANTES da inserção no banco
-            
-            logger.info("Old refresh tokens cleared for user: {}", user.getEmail());
+        // Tenta buscar o token existente em vez de apenas deletar, para evitar conflitos de transação
+        refreshTokenRepository.deleteByUserId(user.getId());
+        refreshTokenRepository.flush(); // Garante que a deleção ocorra ANTES da inserção no banco
 
-            String rawToken = newRawToken();
-            RefreshToken newToken = buildToken(user, rawToken);
-            refreshTokenRepository.saveAndFlush(newToken);
-            
-            logger.info("New refresh token saved successfully for user: {}", user.getEmail());
-            return rawToken;
-        } catch (Exception e) {
-            logger.error("Error creating refresh token: {}", e.getMessage(), e);
-            throw e;
-        }
+        String rawToken = newRawToken();
+        RefreshToken newToken = buildToken(user, rawToken);
+        refreshTokenRepository.saveAndFlush(newToken);
+
+        return rawToken;
     }
 
     @Transactional

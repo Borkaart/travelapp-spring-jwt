@@ -18,21 +18,19 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        logger.info("CustomUserDetailsService: Searching for user with email: '{}'", email);
+        logger.debug("Loading user by email: {}", email);
         return userRepository.findByEmail(email)
                 .map(user -> {
-                    logger.info("CustomUserDetailsService: User found in database: '{}'", user.getEmail());
                     String password = user.getPassword();
                     String passLog = (password != null && password.length() > 10) 
                             ? password.substring(0, 10) + "..." 
                             : password;
-                    logger.debug("User found details: ID={}, Role={}, PassHashStart={}", 
-                            user.getId(), user.getRole(), passLog);
+                    logger.debug("User found: {}. Password hash start: {}", user.getEmail(), passLog);
                     return user;
                 })
                 .orElseThrow(() -> {
-                    logger.error("CustomUserDetailsService: User NOT FOUND in database for email: '{}'", email);
-                    return new UsernameNotFoundException("User not found: " + email);
+                    logger.error("User not found with email: {}", email);
+                    return new UsernameNotFoundException("User not found");
                 });
     }
 }
