@@ -41,25 +41,30 @@ public class DestinationPlaceService {
             logger.info("Fetching points of interest for {} using Overpass API (categoryGroup: {}, sortBy: {})", 
                 destination.getName(), categoryGroup, sortBy);
             
-            // Overpass query for tourist attractions, historic sites, museums, and parks
+            // Optimized Overpass query for tourist attractions, historic sites, museums, and parks
             String query = String.format(
                 "[out:json][timeout:25];" +
-                "node[\"tourism\"](around:%d,%f,%f);" +
-                "out body %d;" +
-                "node[\"historic\"](around:%d,%f,%f);" +
-                "out body %d;" +
-                "node[\"leisure\"=\"park\"](around:%d,%f,%f);" +
+                "(" +
+                  "node[\"tourism\"](around:%d,%f,%f);" +
+                  "node[\"historic\"](around:%d,%f,%f);" +
+                  "node[\"leisure\"=\"park\"](around:%d,%f,%f);" +
+                ");" +
                 "out body %d;",
-                DEFAULT_RADIUS_KM * 1000, geoPoint.lat(), geoPoint.lon(), DEFAULT_LIMIT / 3,
-                DEFAULT_RADIUS_KM * 1000, geoPoint.lat(), geoPoint.lon(), DEFAULT_LIMIT / 3,
-                DEFAULT_RADIUS_KM * 1000, geoPoint.lat(), geoPoint.lon(), DEFAULT_LIMIT / 3
+                DEFAULT_RADIUS_KM * 1000, geoPoint.lat(), geoPoint.lon(),
+                DEFAULT_RADIUS_KM * 1000, geoPoint.lat(), geoPoint.lon(),
+                DEFAULT_RADIUS_KM * 1000, geoPoint.lat(), geoPoint.lon(),
+                DEFAULT_LIMIT
             );
+
+            // IMPORTANT: Use URLEncoder to avoid 400 Bad Request error on Overpass API
+            String encodedData = java.net.URLEncoder.encode(query, java.nio.charset.StandardCharsets.UTF_8);
 
             Map<String, Object> response = RestClient.builder()
                     .baseUrl(OVERPASS_API_URL)
                     .build()
                     .post()
-                    .body("data=" + query)
+                    .contentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED)
+                    .body("data=" + encodedData)
                     .retrieve()
                     .body(Map.class);
 
