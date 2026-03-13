@@ -3,6 +3,7 @@ package com.travelapp.trip.repository;
 import com.travelapp.trip.domain.Trip;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,7 +12,11 @@ import java.util.Optional;
 
 public interface TripRepository extends JpaRepository<Trip, Long> {
 
+    @EntityGraph(attributePaths = {"destination", "owner"})
     Page<Trip> findAllByOwnerId(Long ownerId, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"destination", "owner"})
+    Optional<Trip> findById(Long id);
 
     boolean existsByIdAndOwnerId(Long id, Long ownerId);
 

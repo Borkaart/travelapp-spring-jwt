@@ -31,6 +31,7 @@ public class TripService {
     private final TripAccessService tripAccessService;
     private final ItineraryAutoPlannerService itineraryAutoPlannerService;
 
+    @org.springframework.transaction.annotation.Transactional
     public TripResponse create(TripCreateRequest request, User user) {
 
         if (request.getEndDate().isBefore(request.getStartDate())) {
@@ -54,6 +55,7 @@ public class TripService {
         return toResponse(savedTrip);
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public Page<TripResponse> listMyTrips(User user, Pageable pageable) {
         Pageable safePageable = sanitizePageable(pageable);
 
@@ -62,6 +64,7 @@ public class TripService {
                 .map(this::toResponse);
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public TripResponse getById(Long tripId, User user) {
         Trip trip = tripAccessService.getOwnedTrip(tripId, user);
         return toResponse(trip);
