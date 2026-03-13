@@ -24,14 +24,24 @@ public class RefreshTokenService {
     @Value("${jwt.refresh-expiration-days:7}")
     private long refreshExpirationDays;
 
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RefreshTokenService.class);
+
     @Transactional
     public String createForLogin(User user) {
-        // Quando o usuario loga, eu removo os tokens antigos para manter o fluxo simples e seguro.
-        refreshTokenRepository.deleteByUser(user);
+        try {
+            logger.info("Creating refresh token for login - User: {}", user.getEmail());
+            // Quando o usuario loga, eu removo os tokens antigos para manter o fluxo simples e seguro.
+            refreshTokenRepository.deleteByUser(user);
+            logger.info("Old refresh tokens deleted for user: {}", user.getEmail());
 
-        String rawToken = newRawToken();
-        refreshTokenRepository.save(buildToken(user, rawToken));
-        return rawToken;
+            String rawToken = newRawToken();
+            refreshTokenRepository.save(buildToken(user, rawToken));
+            logger.info("New refresh token saved successfully for user: {}", user.getEmail());
+            return rawToken;
+        } catch (Exception e) {
+            logger.error("Error creating refresh token: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     @Transactional
