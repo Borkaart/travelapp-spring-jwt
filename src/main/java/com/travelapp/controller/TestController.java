@@ -11,9 +11,4 @@ public class TestController {
     public String test() {
         return "Acesso autorizado 🎉";
     }
-
-    @GetMapping("/api/health")
-    public ResponseEntity<String> health() {
-        return ResponseEntity.ok("{\"status\":\"UP\"}");
-    }
 }

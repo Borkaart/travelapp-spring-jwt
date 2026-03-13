@@ -53,12 +53,18 @@ public class DataSourceConfig {
                 password = "";
                 String userInfo = dbUri.getUserInfo();
                 if (userInfo != null && userInfo.contains(":")) {
-                    username = userInfo.split(":")[0];
-                    password = userInfo.split(":")[1];
+                    int colonIndex = userInfo.indexOf(':');
+                    username = userInfo.substring(0, colonIndex);
+                    password = userInfo.substring(colonIndex + 1);
+                }
+                
+                int port = dbUri.getPort();
+                if (port == -1) {
+                    port = 5432; // Default PostgreSQL port
                 }
                 
                 finalUrl = String.format("jdbc:postgresql://%s:%d%s", 
-                        dbUri.getHost(), dbUri.getPort(), dbUri.getPath());
+                        dbUri.getHost(), port, dbUri.getPath());
                 
                 logger.info("JDBC URL constructed successfully: {}", finalUrl);
                 
