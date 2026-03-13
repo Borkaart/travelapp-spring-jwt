@@ -21,7 +21,7 @@ public class RefreshToken {
     @Column(name = "token_hash", nullable = true, unique = true, length = 64)
     private String tokenHash;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
