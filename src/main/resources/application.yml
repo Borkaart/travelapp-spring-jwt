@@ -23,7 +23,9 @@ server:
 logging:
   level:
     com.travelapp: DEBUG
-    org.springframework.security: INFO
+    org.springframework.security: DEBUG
+    org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
+    org.springframework.web.cors: DEBUG
 
 jwt:
   secret: ${JWT_SECRET:WPvHbw1zGN9Rs8BZtup4igI5CTqrKAFLhdQJMl2xUVEfX6noSY37Ome0Dkaycj}
@@ -63,7 +65,8 @@ spring:
 logging:
   level:
     com.travelapp: DEBUG
-    org.springframework.security: INFO
+    org.springframework.security: DEBUG
+    org.springframework.web.cors: DEBUG
 
 jwt:
   secret: ${JWT_SECRET}

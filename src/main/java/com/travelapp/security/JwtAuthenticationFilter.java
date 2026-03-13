@@ -37,6 +37,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         boolean shouldSkip = HttpMethod.OPTIONS.matches(method)
                 || path.startsWith("/api/auth")
+                || path.equals("/api/health")
+                || path.equals("/")
                 || (path.equals("/api/users") && HttpMethod.POST.matches(method))
                 || path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs")
