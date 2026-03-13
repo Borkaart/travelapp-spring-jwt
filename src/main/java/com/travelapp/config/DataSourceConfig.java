@@ -25,16 +25,31 @@ public class DataSourceConfig {
         DataSourceProperties properties = new DataSourceProperties();
 
         if (databaseUrl != null && !databaseUrl.isEmpty()) {
-            // Converte postgres:// para jdbc:postgresql://
-            String jdbcUrl = databaseUrl.replace("postgres://", "jdbc:postgresql://");
+            // Suporta tanto postgresql:// quanto postgres:// sem corromper a URL
+            String jdbcUrl;
+            if (databaseUrl.startsWith("postgresql://")) {
+                jdbcUrl = databaseUrl.replaceFirst("postgresql://", "jdbc:postgresql://");
+            } else if (databaseUrl.startsWith("postgres://")) {
+                jdbcUrl = databaseUrl.replaceFirst("postgres://", "jdbc:postgresql://");
+            } else {
+                jdbcUrl = databaseUrl;
+            }
             properties.setUrl(jdbcUrl);
         } else {
-            if (environment.matchesProfiles("prod")) {
-                throw new IllegalStateException("DATABASE_URL must be set when running with profile 'prod'");
+            // Tenta obter as propriedades do application.yml/properties ou usa defaults
+            String yamlUrl = environment.getProperty("spring.datasource.url");
+            if (yamlUrl != null) {
+                properties.setUrl(yamlUrl);
+                properties.setUsername(environment.getProperty("spring.datasource.username"));
+                properties.setPassword(environment.getProperty("spring.datasource.password"));
+            } else {
+                if (environment.matchesProfiles("prod")) {
+                    throw new IllegalStateException("DATABASE_URL or spring.datasource.url must be set in prod");
+                }
+                properties.setUrl("jdbc:postgresql://localhost:5432/travelapp");
+                properties.setUsername("postgres");
+                properties.setPassword("postgres");
             }
-            properties.setUrl("jdbc:postgresql://localhost:5432/travelapp");
-            properties.setUsername("postgres");
-            properties.setPassword("postgres");
         }
 
         return properties;
