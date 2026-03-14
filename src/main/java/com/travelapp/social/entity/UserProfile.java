@@ -40,5 +40,13 @@ public class UserProfile {
 
     private String websiteLink;
 
+    private String gender;
+
+    @Builder.Default
+    private String themePreference = "SYSTEM";
+
+    @Builder.Default
+    private boolean notificationsEnabled = true;
+
     // Métodos utilitários podem ser adicionados aqui
 }

@@ -43,6 +43,8 @@ public class UserController {
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
+                .isProfileCompleted(user.isProfileCompleted())
+                .profileImage(user.getProfileImage())
                 .build();
     }
     @PreAuthorize("hasRole('ADMIN')")

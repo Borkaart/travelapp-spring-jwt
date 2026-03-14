@@ -15,4 +15,7 @@ public class UpdateProfileDto {
     private String instagramLink;
     private String facebookLink;
     private String websiteLink;
+    private String gender;
+    private String themePreference;
+    private Boolean notificationsEnabled;
 }

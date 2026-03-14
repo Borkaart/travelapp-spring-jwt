@@ -39,6 +39,8 @@ public class UserService {
                 .id(savedUser.getId())
                 .name(savedUser.getName())
                 .email(savedUser.getEmail())
+                .isProfileCompleted(savedUser.isProfileCompleted())
+                .profileImage(savedUser.getProfileImage())
                 .build();
     }
 }

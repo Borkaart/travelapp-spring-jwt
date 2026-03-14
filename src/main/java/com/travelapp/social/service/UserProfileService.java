@@ -40,8 +40,11 @@ public class UserProfileService {
         // Update User info
         if (dto.getName() != null) {
             user.setName(dto.getName());
-            userRepository.save(user);
         }
+        
+        // Set Profile complete flag
+        user.setProfileCompleted(true);
+        userRepository.save(user);
 
         // Update Profile info
         profile.setBio(dto.getBio());
@@ -52,6 +55,10 @@ public class UserProfileService {
         profile.setInstagramLink(dto.getInstagramLink());
         profile.setFacebookLink(dto.getFacebookLink());
         profile.setWebsiteLink(dto.getWebsiteLink());
+        
+        if (dto.getGender() != null) profile.setGender(dto.getGender());
+        if (dto.getThemePreference() != null) profile.setThemePreference(dto.getThemePreference());
+        if (dto.getNotificationsEnabled() != null) profile.setNotificationsEnabled(dto.getNotificationsEnabled());
 
         UserProfile savedProfile = userProfileRepository.save(profile);
         return mapToDto(savedProfile);
@@ -88,6 +95,9 @@ public class UserProfileService {
                 .instagramLink(profile.getInstagramLink())
                 .facebookLink(profile.getFacebookLink())
                 .websiteLink(profile.getWebsiteLink())
+                .gender(profile.getGender())
+                .themePreference(profile.getThemePreference())
+                .notificationsEnabled(profile.isNotificationsEnabled())
                 .build();
     }
 }
