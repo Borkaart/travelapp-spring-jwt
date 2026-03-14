@@ -44,14 +44,21 @@ public class DestinationPlaceService {
                 destination.getName(), categoryGroup, sortBy);
             
             // Optimized Overpass query for tourist attractions, historic sites, museums, and parks
+            // We search for both nodes and ways (areas) to be more comprehensive
             String query = String.format(
                 "[out:json][timeout:25];" +
                 "(" +
                   "node[\"tourism\"](around:%d,%f,%f);" +
+                  "way[\"tourism\"](around:%d,%f,%f);" +
                   "node[\"historic\"](around:%d,%f,%f);" +
+                  "way[\"historic\"](around:%d,%f,%f);" +
                   "node[\"leisure\"=\"park\"](around:%d,%f,%f);" +
+                  "way[\"leisure\"=\"park\"](around:%d,%f,%f);" +
                 ");" +
-                "out body %d;",
+                "out center %d;",
+                DEFAULT_RADIUS_KM * 1000, geoPoint.lat(), geoPoint.lon(),
+                DEFAULT_RADIUS_KM * 1000, geoPoint.lat(), geoPoint.lon(),
+                DEFAULT_RADIUS_KM * 1000, geoPoint.lat(), geoPoint.lon(),
                 DEFAULT_RADIUS_KM * 1000, geoPoint.lat(), geoPoint.lon(),
                 DEFAULT_RADIUS_KM * 1000, geoPoint.lat(), geoPoint.lon(),
                 DEFAULT_RADIUS_KM * 1000, geoPoint.lat(), geoPoint.lon(),
@@ -71,6 +78,7 @@ public class DestinationPlaceService {
                     .body(Map.class);
 
             if (response == null || !(response.get("elements") instanceof List<?> elements)) {
+                logger.warn("Empty or invalid response from Overpass API for {}. Response: {}", destination.getName(), response);
                 return Collections.emptyList();
             }
 
@@ -81,6 +89,11 @@ public class DestinationPlaceService {
                     .filter(Objects::nonNull)
                     .distinct()
                     .toList();
+            
+            if (places.isEmpty()) {
+                logger.info("No points of interest found within {}km for {}. Trying fallback with larger radius...", DEFAULT_RADIUS_KM, destination.getName());
+                // Optional: We could retry here with a larger radius, but for now let's just log it.
+            }
 
             // Apply filters
             if (StringUtils.hasText(categoryGroup)) {
@@ -128,6 +141,14 @@ public class DestinationPlaceService {
 
         Double lat = (Double) element.get("lat");
         Double lon = (Double) element.get("lon");
+        
+        // Handle elements that have 'center' (like ways in Overpass API)
+        if (lat == null && element.get("center") instanceof Map<?, ?> center) {
+            lat = (Double) center.get("lat");
+            lon = (Double) center.get("lon");
+        }
+
+        if (lat == null || lon == null) return null;
 
         String tourism = (String) tags.get("tourism");
         String historic = (String) tags.get("historic");
