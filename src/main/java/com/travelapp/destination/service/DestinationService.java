@@ -34,6 +34,7 @@ public class DestinationService {
     private final DestinationHotelOfferService destinationHotelOfferService;
     private final DestinationHotelBookingService destinationHotelBookingService;
     private final DestinationLookupService destinationLookupService;
+    private final AmadeusActivityService amadeusActivityService;
 
     public DestinationResponse create(DestinationCreateRequest request) {
         Destination destination = Destination.builder()
@@ -114,6 +115,15 @@ public class DestinationService {
     public List<DestinationHotelResponse> getHotels(Long id) {
         Destination destination = findById(id);
         return destinationHotelService.getHotels(destination);
+    }
+
+    public List<AmadeusActivityData> getActivities(Long id) {
+        Destination destination = findById(id);
+        GeoPoint geoPoint = destinationLookupService.findCityCoordinates(destination.getName(), destination.getCountry());
+        if (geoPoint == null) {
+            return List.of();
+        }
+        return amadeusActivityService.searchActivities(geoPoint.lat(), geoPoint.lon(), null);
     }
 
     public List<DestinationHotelOfferResponse> getHotelOffers(

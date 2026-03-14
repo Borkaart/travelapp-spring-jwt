@@ -11,6 +11,8 @@ import com.travelapp.destination.dto.DestinationPlaceResponse;
 import com.travelapp.destination.dto.DestinationResponse;
 import com.travelapp.destination.dto.DestinationResolveRequest;
 import com.travelapp.destination.dto.DestinationUpdateRequest;
+import com.travelapp.destination.service.AmadeusActivityData;
+import com.travelapp.destination.service.AmadeusActivityService;
 import com.travelapp.destination.service.DestinationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ import java.util.List;
 public class DestinationController {
 
     private final DestinationService destinationService;
+    private final AmadeusActivityService amadeusActivityService; // Added field
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -91,6 +94,12 @@ public class DestinationController {
         return destinationService.getHotels(id);
     }
 
+    @GetMapping("/{id}/activities")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    public List<AmadeusActivityData> getActivities(@PathVariable Long id) {
+        return destinationService.getActivities(id);
+    }
+
     @GetMapping("/hotels/{hotelId}/offers")
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public List<DestinationHotelOfferResponse> getHotelOffers(
@@ -128,5 +137,14 @@ public class DestinationController {
     @PreAuthorize("hasRole('ADMIN')")
     public void delete(@PathVariable Long id) {
         destinationService.delete(id);
+    }
+
+    @GetMapping("/search-activities")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    public List<AmadeusActivityData> searchActivities(
+            @RequestParam Double lat,
+            @RequestParam Double lon,
+            @RequestParam(required = false) Integer radius) {
+        return amadeusActivityService.searchActivities(lat, lon, radius);
     }
 }
