@@ -28,7 +28,7 @@ jwt:
 
 app:
   cors:
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173,https://travelapp-frontend-azure.vercel.app}
 
 unsplash:
   enabled: ${UNSPLASH_ENABLED:false}

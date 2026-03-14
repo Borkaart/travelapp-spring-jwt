@@ -18,6 +18,7 @@ public class AmadeusClientService {
     private static final Logger logger = LoggerFactory.getLogger(AmadeusClientService.class);
 
     private final AmadeusProperties amadeusProperties;
+    private final RestClient.Builder restClientBuilder;
 
     public String fetchAccessToken() {
         try {
@@ -49,7 +50,7 @@ public class AmadeusClientService {
     }
 
     public RestClient restClient() {
-        return RestClient.builder()
+        return restClientBuilder
                 .baseUrl(resolveBaseUrl())
                 .build();
     }

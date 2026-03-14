@@ -30,6 +30,7 @@ public class DestinationPlaceService {
 
     private final DestinationLookupService destinationLookupService;
     private final DestinationImageService destinationImageService;
+    private final RestClient restClient;
 
     @Cacheable(value = "destinationPlaces", key = "{#destination.id, #categoryGroup, #sortBy}")
     public List<DestinationPlaceResponse> getPlaces(Destination destination, String categoryGroup, String sortBy) {
@@ -45,33 +46,29 @@ public class DestinationPlaceService {
             
             // Optimized Overpass query for tourist attractions, historic sites, museums, and parks
             // We search for both nodes and ways (areas) to be more comprehensive
+            // Using numbered arguments to avoid repetition errors: 1=radius, 2=lat, 3=lon, 4=limit
             String query = String.format(
                 "[out:json][timeout:25];" +
                 "(" +
-                  "node[\"tourism\"](around:%d,%f,%f);" +
-                  "way[\"tourism\"](around:%d,%f,%f);" +
-                  "node[\"historic\"](around:%d,%f,%f);" +
-                  "way[\"historic\"](around:%d,%f,%f);" +
-                  "node[\"leisure\"=\"park\"](around:%d,%f,%f);" +
-                  "way[\"leisure\"=\"park\"](around:%d,%f,%f);" +
+                  "node[\"tourism\"](around:%1$d,%2$.6f,%3$.6f);" +
+                  "way[\"tourism\"](around:%1$d,%2$.6f,%3$.6f);" +
+                  "node[\"historic\"](around:%1$d,%2$.6f,%3$.6f);" +
+                  "way[\"historic\"](around:%1$d,%2$.6f,%3$.6f);" +
+                  "node[\"leisure\"=\"park\"](around:%1$d,%2$.6f,%3$.6f);" +
+                  "way[\"leisure\"=\"park\"](around:%1$d,%2$.6f,%3$.6f);" +
                 ");" +
-                "out center %d;",
-                DEFAULT_RADIUS_KM * 1000, geoPoint.lat(), geoPoint.lon(),
-                DEFAULT_RADIUS_KM * 1000, geoPoint.lat(), geoPoint.lon(),
-                DEFAULT_RADIUS_KM * 1000, geoPoint.lat(), geoPoint.lon(),
-                DEFAULT_RADIUS_KM * 1000, geoPoint.lat(), geoPoint.lon(),
-                DEFAULT_RADIUS_KM * 1000, geoPoint.lat(), geoPoint.lon(),
-                DEFAULT_RADIUS_KM * 1000, geoPoint.lat(), geoPoint.lon(),
+                "out center %4$d;",
+                DEFAULT_RADIUS_KM * 1000, 
+                geoPoint.lat(), 
+                geoPoint.lon(),
                 DEFAULT_LIMIT
             );
 
             // IMPORTANT: Use URLEncoder to avoid 400 Bad Request error on Overpass API
             String encodedData = java.net.URLEncoder.encode(query, java.nio.charset.StandardCharsets.UTF_8);
 
-            Map<String, Object> response = RestClient.builder()
-                    .baseUrl(OVERPASS_API_URL)
-                    .build()
-                    .post()
+            Map<String, Object> response = restClient.post()
+                    .uri(OVERPASS_API_URL)
                     .contentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED)
                     .body("data=" + encodedData)
                     .retrieve()

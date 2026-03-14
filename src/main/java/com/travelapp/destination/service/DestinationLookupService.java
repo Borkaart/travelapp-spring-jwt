@@ -31,6 +31,7 @@ public class DestinationLookupService {
     private static final String PHOTON_API_BASE_URL = "https://photon.komoot.io";
 
     private final AmadeusClientService amadeusClientService;
+    private final RestClient restClient;
 
     // Simple in-memory cache to avoid hitting APIs on every request
     private List<DestinationCountryResponse> cachedCountries = null;
@@ -65,14 +66,8 @@ public class DestinationLookupService {
         
         try {
             logger.info("Refreshing countries cache from {}", REST_COUNTRIES_BASE_URL);
-            RestCountriesCountryResponse[] countries = RestClient.builder()
-                    .baseUrl(REST_COUNTRIES_BASE_URL)
-                    .build()
-                    .get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/v3.1/all")
-                            .queryParam("fields", "name,cca2")
-                            .build())
+            RestCountriesCountryResponse[] countries = restClient.get()
+                    .uri(REST_COUNTRIES_BASE_URL + "/v3.1/all?fields=name,cca2")
                     .retrieve()
                     .body(RestCountriesCountryResponse[].class);
 
@@ -180,16 +175,8 @@ public class DestinationLookupService {
         // 2. Try Photon (OpenStreetMap) - Free and no key required
         try {
             logger.debug("Searching cities via Photon with query: '{}' and countryCode: '{}'", query, countryCode);
-            Map<String, Object> response = RestClient.builder()
-                    .baseUrl(PHOTON_API_BASE_URL)
-                    .build()
-                    .get()
-                    .uri(uriBuilder -> {
-                        uriBuilder.path("/api")
-                                .queryParam("q", query.trim())
-                                .queryParam("limit", 15);
-                        return uriBuilder.build();
-                    })
+            Map<String, Object> response = restClient.get()
+                    .uri(PHOTON_API_BASE_URL + "/api?limit=15&q=" + query.trim())
                     .retrieve()
                     .body(Map.class);
 
@@ -362,16 +349,8 @@ public class DestinationLookupService {
         // 2. Try Photon as fallback for coordinates
         try {
             logger.debug("Finding coordinates for city: '{}' via Photon", cityName);
-            Map<String, Object> response = RestClient.builder()
-                    .baseUrl(PHOTON_API_BASE_URL)
-                    .build()
-                    .get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/api")
-                            .queryParam("q", cityName.trim())
-                            .queryParam("type", "city")
-                            .queryParam("limit", 1)
-                            .build())
+            Map<String, Object> response = restClient.get()
+                    .uri(PHOTON_API_BASE_URL + "/api?limit=1&q=" + cityName.trim())
                     .retrieve()
                     .body(Map.class);
 

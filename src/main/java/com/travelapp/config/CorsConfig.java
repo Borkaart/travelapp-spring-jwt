@@ -30,8 +30,10 @@ public class CorsConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         List<String> origins = corsProperties.allowedOrigins().stream()
+                .flatMap(s -> java.util.Arrays.stream(s.split(","))) // Split comma-separated values
                 .map(String::trim)
                 .map(s -> s.replace("`", "")) // Remove backticks se vierem na var
+                .filter(org.springframework.util.StringUtils::hasText)
                 .collect(Collectors.toList());
         
         logger.info("Configuring CORS with allowed origins: {}", origins);
