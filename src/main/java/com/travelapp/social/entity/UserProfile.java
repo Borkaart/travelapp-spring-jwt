@@ -26,25 +26,32 @@ public class UserProfile {
     @Column(length = 500)
     private String bio;
 
+    @Column(name = "phone_number")
     private String phoneNumber;
 
+    @Column(name = "birth_date")
     private LocalDate birthDate;
 
     private String city;
 
     private String country;
 
+    @Column(name = "instagram_link")
     private String instagramLink;
 
+    @Column(name = "facebook_link")
     private String facebookLink;
 
+    @Column(name = "website_link")
     private String websiteLink;
 
     private String gender;
 
+    @Column(name = "theme_preference")
     @Builder.Default
     private String themePreference = "SYSTEM";
 
+    @Column(name = "notifications_enabled")
     @Builder.Default
     private boolean notificationsEnabled = true;
 

@@ -32,6 +32,7 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
+    @Column(name = "profile_image")
     private String profileImage;
 
     @Column(nullable = false)
@@ -42,7 +43,7 @@ public class User implements UserDetails {
     @Builder.Default
     private Role role = Role.USER;
 
-    @Column(nullable = false)
+    @Column(name = "is_profile_completed", nullable = false)
     @Builder.Default
     private boolean isProfileCompleted = false;
 
