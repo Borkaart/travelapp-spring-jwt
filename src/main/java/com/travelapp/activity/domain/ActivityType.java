@@ -7,5 +7,12 @@ public enum ActivityType {
     HOTEL,
     TOUR,
     SHOPPING,
+    FLIGHT,
+    HIKING,
+    BEACH,
+    NIGHTLIFE,
+    CULTURE,
+    SPORTS,
+    RELAXATION,
     OTHER
 }
