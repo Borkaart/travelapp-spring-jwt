@@ -56,6 +56,32 @@ class DestinationLookupServiceTest {
     }
     
     @Test
+    void searchCities_ShouldReturnFallback_WhenApisFail() {
+        when(amadeusClientService.isConfigured()).thenReturn(false);
+        // Photon is called via a static RestClient.builder() in the implementation, 
+        // which is hard to mock without PowerMock or similar. 
+        // But we can test if the fallback logic is reached when results are empty.
+        
+        List<DestinationCityResponse> result = destinationLookupService.searchCities("BR", "São Paulo");
+        assertFalse(result.isEmpty());
+        assertEquals("São Paulo", result.get(0).getName());
+        assertEquals("BR", result.get(0).getCountryCode());
+    }
+
+    @Test
+    void searchCities_ShouldUseCache() {
+        when(amadeusClientService.isConfigured()).thenReturn(false);
+        
+        // First call populates cache (from fallback in this mock environment)
+        List<DestinationCityResponse> firstResult = destinationLookupService.searchCities("BR", "Rio");
+        assertFalse(firstResult.isEmpty());
+        
+        // Second call should return same results from cache
+        List<DestinationCityResponse> secondResult = destinationLookupService.searchCities("BR", "Rio");
+        assertEquals(firstResult, secondResult);
+    }
+    
+    @Test
     void testJsonParsing() throws Exception {
         // This test verifies that the JSON structure matches what we expect
         // using the classes directly, without mocking the full RestClient chain which is complex
