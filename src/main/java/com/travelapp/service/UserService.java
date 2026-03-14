@@ -43,4 +43,9 @@ public class UserService {
                 .profileImage(savedUser.getProfileImage())
                 .build();
     }
+
+    public User findById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
 }

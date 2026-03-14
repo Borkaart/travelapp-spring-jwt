@@ -1,6 +1,7 @@
 package com.travelapp.social.api;
 
 import com.travelapp.entity.User;
+import com.travelapp.social.dto.ProfileImageUpdateDto;
 import com.travelapp.social.dto.UpdateProfileDto;
 import com.travelapp.social.dto.UserProfileDto;
 import com.travelapp.social.service.UserProfileService;
@@ -36,9 +37,7 @@ public class UserProfileController {
     @PutMapping("/profile/image")
     public ResponseEntity<UserProfileDto> updateProfileImage(
             @AuthenticationPrincipal User user,
-            @RequestBody String imageUrl) {
-        // Remove aspas se vierem no JSON string simples
-        String cleanUrl = imageUrl.replace("\"", "");
-        return ResponseEntity.ok(userProfileService.updateProfileImage(user.getId(), cleanUrl));
+            @RequestBody ProfileImageUpdateDto dto) {
+        return ResponseEntity.ok(userProfileService.updateProfileImage(user.getId(), dto.getImageUrl()));
     }
 }

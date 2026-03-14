@@ -37,8 +37,9 @@ public class UserController {
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @GetMapping("/me")
     public UserResponse me(
-            @AuthenticationPrincipal User user
+            @AuthenticationPrincipal User authUser
     ) {
+        User user = userService.findById(authUser.getId());
         return UserResponse.builder()
                 .id(user.getId())
                 .name(user.getName())

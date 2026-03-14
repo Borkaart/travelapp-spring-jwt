@@ -32,7 +32,8 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
-    @Column(name = "profile_image", columnDefinition = "TEXT")
+    @Lob
+    @Column(name = "profile_image")
     private String profileImage;
 
     @Column(nullable = false)
