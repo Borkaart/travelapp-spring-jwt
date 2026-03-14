@@ -71,6 +71,7 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/health").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/api/budgets/**").hasAnyRole("USER","ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
