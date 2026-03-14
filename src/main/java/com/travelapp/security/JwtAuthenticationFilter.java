@@ -106,7 +106,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private void writeError(HttpServletResponse response, int status, String message) throws IOException {
         if (response.isCommitted()) return;
 
-        response.resetBuffer();
         response.setStatus(status);
         response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json");
