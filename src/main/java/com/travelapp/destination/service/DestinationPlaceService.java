@@ -1,3 +1,5 @@
+package com.travelapp.destination.service;
+
 import com.travelapp.destination.domain.Destination;
 import com.travelapp.destination.dto.DestinationPlaceResponse;
 import lombok.RequiredArgsConstructor;

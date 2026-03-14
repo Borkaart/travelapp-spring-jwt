@@ -1,0 +1,5 @@
+[33mcommit 4cf46e0a3273dd1ffec02e012585f6c4da3a4d6d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Borkaart <paulohenriquedosanjos387@gmail.com>
+Date:   Fri Mar 13 17:48:58 2026 -0300
+
+    Feat: Innovative POI backend solution using Overpass API, Unsplash enrichment, and caching
