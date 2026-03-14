@@ -109,8 +109,8 @@ public class DestinationPlaceService {
         }
     }
 
-    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-        if (lat2 == null || lon2 == null) return Double.MAX_VALUE;
+    private double calculateDistance(Double lat1, Double lon1, Double lat2, Double lon2) {
+        if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) return Double.MAX_VALUE;
         double theta = lon1 - lon2;
         double dist = Math.sin(Math.toRadians(lat1)) * Math.sin(Math.toRadians(lat2)) + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.cos(Math.toRadians(theta));
         dist = Math.acos(dist);
